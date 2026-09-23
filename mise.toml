@@ -1,0 +1,21 @@
+[env]
+
+[tools]
+go = "1.23"
+pre-commit = "4.6.0"
+glab = "1.100.0"
+
+[tasks.build]
+run = "go build -o bin/adblock-recovery-sink ./cmd/sink"
+
+[tasks.test]
+run = "go test ./... -race -cover"
+
+[tasks.run]
+run = "go run ./cmd/sink"
+
+[hooks]
+enter = """
+pre-commit install --install-hooks 2>/dev/null || true
+[ -f mise.local.toml ] || cp mise.local.toml.example mise.local.toml
+"""

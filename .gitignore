@@ -1,0 +1,29 @@
+# go
+/bin/
+*.test
+*.out
+coverage.txt
+
+# mise
+mise.local.toml
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# os
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# caches
+.cache/
+dist/

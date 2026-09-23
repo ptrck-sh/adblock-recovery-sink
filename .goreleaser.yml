@@ -1,0 +1,31 @@
+version: 2
+
+project_name: adblock-recovery-sink
+
+builds:
+  - id: sink
+    main: ./cmd/sink
+    binary: sink
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+
+archives:
+  - id: sink
+    name_template: "adblock-recovery-sink_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-{{ .ShortCommit }}-SNAPSHOT"
