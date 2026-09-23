@@ -13,19 +13,51 @@ import (
 	"syscall"
 
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/config"
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/enroll"
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/metrics"
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/ops"
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/pki"
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/sink"
 )
 
 var version = "dev"
 
-var pkiInit func(args []string) error = func(args []string) error {
-	return errors.New("pki init not available")
+type certSource struct {
+	issuer  *pki.Issuer
+	metrics *metrics.Metrics
 }
 
-var newCertSource func(cfg config.Config) (sink.CertSource, func() error, http.Handler, error) = func(cfg config.Config) (sink.CertSource, func() error, http.Handler, error) {
-	return nil, nil, nil, errors.New("pki not wired")
+func (c certSource) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	cert, err := c.issuer.GetCertificate(hello)
+	c.metrics.SetCertCacheEntries(float64(c.issuer.CacheLen()))
+	return cert, err
+}
+
+func loadIssuer(cfg config.Config) (*pki.Issuer, error) {
+	root, err := material(cfg.PKI.RootCert, cfg.PKI.RootCertFile)
+	if err != nil {
+		return nil, err
+	}
+	intermediate, err := material(cfg.PKI.IntermediateCert, cfg.PKI.IntermediateCertFile)
+	if err != nil {
+		return nil, err
+	}
+	key, err := material(cfg.PKI.IntermediateKey, cfg.PKI.IntermediateKeyFile)
+	if err != nil {
+		return nil, err
+	}
+	return pki.Load(root, intermediate, key, pki.IssuerOptions{Hosts: cfg.Hosts, CacheSize: cfg.Limits.CertCacheSize})
+}
+
+func material(value, file string) ([]byte, error) {
+	if value != "" {
+		return []byte(value), nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("read pki material: %w", err)
+	}
+	return data, nil
 }
 
 func main() {
@@ -61,7 +93,7 @@ func run(args []string) error {
 		if len(args) < 2 || args[1] != "init" {
 			return errors.New("usage: sink pki init")
 		}
-		return pkiInit(args[2:])
+		return pki.RunInit(args[2:], os.Stdout)
 	case "serve":
 		return serve(args[1:])
 	default:
@@ -78,8 +110,8 @@ func serve(args []string) error {
 		return err
 	}
 	level := new(slog.LevelVar)
-	if cfg.Log.Level == "debug" {
-		level.Set(slog.LevelDebug)
+	if err := level.UnmarshalText([]byte(cfg.Log.Level)); err != nil {
+		return err
 	}
 	var handler slog.Handler
 	if cfg.Log.Format == "text" {
@@ -88,11 +120,16 @@ func serve(args []string) error {
 		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 	}
 	logger := slog.New(handler)
-	certs, ready, enrollment, err := newCertSource(cfg)
+	issuer, err := loadIssuer(cfg)
 	if err != nil {
 		return err
 	}
 	m := metrics.New(cfg.Profiles)
+	m.SetIssuerExpiry(float64(issuer.ExpiresAt().Unix()))
+	certs := certSource{issuer: issuer, metrics: m}
+	ready := issuer.Ready
+	enrollment := enroll.Handler(issuer, cfg.Enrollment.Host)
+	logger.Info("issuer loaded", "root_fingerprint", pki.Fingerprint(issuer.Root()), "expires", issuer.ExpiresAt())
 	routes, err := cfg.Routes()
 	if err != nil {
 		return err
