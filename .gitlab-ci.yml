@@ -1,0 +1,71 @@
+stages:
+  - lint
+  - test
+  - build
+  - push
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: always
+
+default:
+  tags: [homelab]
+
+include:
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/base@0.23.0
+    inputs:
+      runner_tags:
+        - homelab
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/pre-commit@0.23.0
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/security@0.23.0
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/alint-fix@0.23.0
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/go@0.23.0
+    inputs:
+      go_image: golang:1.23
+      publish_tags: false
+    rules:
+      - if: $CI_COMMIT_BRANCH
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-build@0.23.0
+    inputs:
+      needs: ['go:build']
+    rules:
+      - if: $CI_COMMIT_BRANCH
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
+    inputs:
+      job_suffix: ":sha"
+      to_image_tag: $CI_COMMIT_SHORT_SHA
+    rules:
+      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
+    inputs:
+      job_suffix: ":latest"
+      to_image_tag: latest
+    rules:
+      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
+    inputs:
+      job_suffix: ":tag"
+      from_image_tag: $CI_COMMIT_SHORT_SHA
+      to_image_tag: $CI_COMMIT_TAG
+    rules:
+      - if: $CI_COMMIT_TAG
+
+go:build:
+  stage: build
+  image:
+    name: goreleaser/goreleaser:v2.16.0
+    entrypoint: [""]
+  tags: [saas-linux-medium-amd64]
+  variables:
+    GITLAB_TOKEN: $CI_JOB_TOKEN
+    GIT_DEPTH: 0
+  script:
+    - goreleaser release --snapshot --clean --config .goreleaser.yml
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 7 days
+  rules:
+    - if: $CI_COMMIT_BRANCH
