@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/config"
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/enroll"
@@ -127,7 +129,13 @@ func serve(args []string) error {
 	m := metrics.New(cfg.Profiles)
 	m.SetIssuerExpiry(float64(issuer.ExpiresAt().Unix()))
 	certs := certSource{issuer: issuer, metrics: m}
-	ready := issuer.Ready
+	var draining atomic.Bool
+	ready := func() error {
+		if draining.Load() {
+			return errors.New("draining")
+		}
+		return issuer.Ready()
+	}
 	enrollment := enroll.Handler(issuer, cfg.Enrollment.Host)
 	logger.Info("issuer loaded", "root_fingerprint", pki.Fingerprint(issuer.Root()), "expires", issuer.ExpiresAt())
 	routes, err := cfg.Routes()
@@ -154,7 +162,9 @@ func serve(args []string) error {
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 	select {
 	case sig := <-signalCh:
-		logger.Info("shutdown", "signal", sig.String())
+		logger.Info("shutdown", "signal", sig.String(), "delay", cfg.Limits.ShutdownDelay.String())
+		draining.Store(true)
+		time.Sleep(cfg.Limits.ShutdownDelay)
 	case err := <-errCh:
 		if !errors.Is(err, http.ErrServerClosed) {
 			return err
