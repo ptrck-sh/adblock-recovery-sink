@@ -170,7 +170,7 @@ ghcr:container:tag:gittag:
   script:
     - skopeo copy --all docker://"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" docker://"ghcr.io/ptrck-sh/adblock-recovery-sink:$CI_COMMIT_TAG"
   rules:
-    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$/
 
 dockerhub:container:tag:gittag:
   needs:
@@ -179,7 +179,7 @@ dockerhub:container:tag:gittag:
   script:
     - skopeo copy --all docker://"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" docker://"docker.io/ptrcksh/adblock-recovery-sink:$CI_COMMIT_TAG"
   rules:
-    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$/
 
 quay:container:tag:gittag:
   needs:
@@ -188,4 +188,4 @@ quay:container:tag:gittag:
   script:
     - skopeo copy --all docker://"$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" docker://"quay.io/ptrck-sh/adblock-recovery-sink:$CI_COMMIT_TAG"
   rules:
-    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$/
