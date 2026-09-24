@@ -6,22 +6,29 @@ The sink sits behind DNS rewrites that you manage on your LAN resolver (AdGuard 
 
 ## Status
 
-Scaffold only. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md); the service itself is not implemented yet.
+Release candidates. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md) and the service, PKI and chart are validated in [docs/validation.md](docs/validation.md).
 
 ## Generate the CA
 
-Run `pki init` once, offline, with the published image. It writes a root and an intermediate, both name-constrained to the given hosts, and refuses to overwrite existing files:
+Run `pki init` once, offline. It writes `root.crt`, `root.key`, `intermediate.crt` and `intermediate.key` (mode `0600`), with root and intermediate both name-constrained to the given hosts, prints the root SHA-256 fingerprint, and refuses to overwrite existing files. It never talks to a cluster or creates Kubernetes objects; getting the files into your secret store is up to you.
+
+With the release binary:
+
+```sh
+sink pki init --hosts html-load.com --out ./ars-pki
+```
+
+With the published image:
 
 ```sh
 mkdir -p ars-pki
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   -v "$PWD/ars-pki:/out" \
   registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0-rc.2 \
-  pki init --hosts html-load.com --out /out \
-    --k8s-secret adblock-recovery-sink-pki --namespace adblock-recovery-sink
+  pki init --hosts html-load.com --out /out
 ```
 
-With Podman, use the same command and add `:Z` to the volume on SELinux hosts. The directory then holds `root.crt`, `root.key`, `intermediate.crt`, `intermediate.key` and, with `--k8s-secret`, a `secret.yaml` that omits `root.key`. The command prints the root SHA-256 fingerprint.
+With Podman, use the same command and add `:Z` to the volume on SELinux hosts.
 
 The running service needs only `root.crt`, `intermediate.crt` and `intermediate.key`. Store `root.key` offline; it is only needed to issue a new intermediate.
 

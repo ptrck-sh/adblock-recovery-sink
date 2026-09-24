@@ -9,27 +9,24 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/pki"
 )
 
-func TestInitWritesConstrainedFilesAndSecret(t *testing.T) {
+func TestInitWritesOnlyConstrainedPEMFiles(t *testing.T) {
 	directory := t.TempDir()
 	now := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 	err := pki.Init(pki.InitOptions{
-		Hosts:           []string{"Allowed.Example", "other.example"},
-		OutDir:          directory,
-		SecretName:      "sink-ca",
-		SecretNamespace: "network",
-		Now:             func() time.Time { return now },
+		Hosts:  []string{"Allowed.Example", "other.example"},
+		OutDir: directory,
+		Now:    func() time.Time { return now },
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"root.crt", "root.key", "intermediate.crt", "intermediate.key", "secret.yaml"} {
+	for _, name := range []string{"root.crt", "root.key", "intermediate.crt", "intermediate.key"} {
 		info, err := os.Stat(filepath.Join(directory, name))
 		if err != nil {
 			t.Fatal(err)
@@ -38,12 +35,12 @@ func TestInitWritesConstrainedFilesAndSecret(t *testing.T) {
 			t.Fatalf("%s permissions are %o", name, info.Mode().Perm())
 		}
 	}
-	secret, err := os.ReadFile(filepath.Join(directory, "secret.yaml"))
+	entries, err := os.ReadDir(directory)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(secret), "root.key") || !strings.Contains(string(secret), "stringData:") {
-		t.Fatalf("unexpected secret contents: %s", secret)
+	if len(entries) != 4 {
+		t.Fatalf("expected exactly four files, got %d", len(entries))
 	}
 	rootPEM, err := os.ReadFile(filepath.Join(directory, "root.crt"))
 	if err != nil {

@@ -34,8 +34,6 @@ const (
 type InitOptions struct {
 	Hosts                []string
 	OutDir               string
-	SecretName           string
-	SecretNamespace      string
 	Now                  func() time.Time
 	RootValidity         time.Duration
 	IntermediateValidity time.Duration
@@ -91,9 +89,6 @@ func Init(opts InitOptions) error {
 		filepath.Join(opts.OutDir, "root.key"),
 		filepath.Join(opts.OutDir, "intermediate.crt"),
 		filepath.Join(opts.OutDir, "intermediate.key"),
-	}
-	if opts.SecretName != "" {
-		paths = append(paths, filepath.Join(opts.OutDir, "secret.yaml"))
 	}
 	for _, path := range paths {
 		if _, err := os.Lstat(path); err == nil {
@@ -189,12 +184,6 @@ func Init(opts InitOptions) error {
 		{filepath.Join(opts.OutDir, "intermediate.crt"), pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: intermediateDER})},
 		{filepath.Join(opts.OutDir, "intermediate.key"), intermediateKeyPEM},
 	}
-	if opts.SecretName != "" {
-		files = append(files, struct {
-			path string
-			data []byte
-		}{filepath.Join(opts.OutDir, "secret.yaml"), secretYAML(opts.SecretName, opts.SecretNamespace, files[0].data, files[2].data, files[3].data)})
-	}
 	created := make([]string, 0, len(files))
 	for _, file := range files {
 		if err := writeNew(file.path, file.data); err != nil {
@@ -216,8 +205,6 @@ func RunInit(args []string, stdout io.Writer) error {
 	flags.SetOutput(io.Discard)
 	hosts := flags.String("hosts", "", "")
 	out := flags.String("out", "", "")
-	secret := flags.String("k8s-secret", "", "")
-	namespace := flags.String("namespace", "", "")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -228,10 +215,8 @@ func RunInit(args []string, stdout io.Writer) error {
 		return errors.New("stdout is required")
 	}
 	if err := Init(InitOptions{
-		Hosts:           strings.Split(*hosts, ","),
-		OutDir:          *out,
-		SecretName:      *secret,
-		SecretNamespace: *namespace,
+		Hosts:  strings.Split(*hosts, ","),
+		OutDir: *out,
 	}); err != nil {
 		return err
 	}
@@ -245,11 +230,6 @@ func RunInit(args []string, stdout io.Writer) error {
 	}
 	for _, name := range []string{"root.crt", "root.key", "intermediate.crt", "intermediate.key"} {
 		if _, err := fmt.Fprintln(stdout, filepath.Join(*out, name)); err != nil {
-			return err
-		}
-	}
-	if *secret != "" {
-		if _, err := fmt.Fprintln(stdout, filepath.Join(*out, "secret.yaml")); err != nil {
 			return err
 		}
 	}
@@ -671,42 +651,6 @@ func writeNew(path string, data []byte) error {
 		return fmt.Errorf("close %s: %w", path, err)
 	}
 	return nil
-}
-
-func secretYAML(name, namespace string, root, intermediate, key []byte) []byte {
-	var builder strings.Builder
-	builder.WriteString("apiVersion: v1\nkind: Secret\nmetadata:\n")
-	builder.WriteString("  name: ")
-	builder.WriteString(yamlQuote(name))
-	builder.WriteByte('\n')
-	if namespace != "" {
-		builder.WriteString("  namespace: ")
-		builder.WriteString(yamlQuote(namespace))
-		builder.WriteByte('\n')
-	}
-	builder.WriteString("type: Opaque\nstringData:\n")
-	for _, item := range []struct {
-		name string
-		data []byte
-	}{
-		{"root.crt", root},
-		{"intermediate.crt", intermediate},
-		{"intermediate.key", key},
-	} {
-		builder.WriteString("  ")
-		builder.WriteString(item.name)
-		builder.WriteString(": |\n")
-		for _, line := range strings.Split(strings.TrimSuffix(string(item.data), "\n"), "\n") {
-			builder.WriteString("    ")
-			builder.WriteString(line)
-			builder.WriteByte('\n')
-		}
-	}
-	return []byte(builder.String())
-}
-
-func yamlQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 func clock(now func() time.Time) func() time.Time {

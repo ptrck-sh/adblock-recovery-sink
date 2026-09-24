@@ -13,7 +13,7 @@ Date: 2026-09-23. Covers milestones 2 to 5 of the [implementation plan](anti-ads
 
 | Check | Result |
 | --- | --- |
-| `pki init` | four `0600` files, optional Secret manifest without `root.key`, refuses to overwrite |
+| `pki init` | four `0600` PEM files, refuses to overwrite, creates no Kubernetes objects |
 | TLS passthrough | Traefik forwards SNI `html-load.com` untouched; the pod serves a 7-day leaf from the intermediate |
 | Unknown SNI, host or path | handshake rejected, 421, 404 |
 | Hostname | `/install`, `/ca.crt`, `/ca.pem`, `/ca-chain.pem`, `/fingerprint` and `/status` served; `/healthz`, `/readyz` and `/metrics` return 404 externally |
