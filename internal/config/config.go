@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	koanf "github.com/knadh/koanf/v2"
 	"github.com/spf13/pflag"
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/profile"
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/profiles"
 )
 
 type Config struct {
@@ -34,6 +36,10 @@ type Config struct {
 	Log         struct {
 		Level  string
 		Format string
+	}
+	Toast struct {
+		Enabled bool
+		Details bool
 	}
 	PKI struct {
 		RootCert             string
@@ -51,7 +57,8 @@ type Config struct {
 		ShutdownDelay     time.Duration
 		CertCacheSize     int
 	}
-	items map[string]profile.Profile
+	items         map[string]profile.Profile
+	hostsExplicit bool
 }
 
 func Load(args []string, environ []string) (Config, error) {
@@ -92,6 +99,7 @@ func Load(args []string, environ []string) (Config, error) {
 		return Config{}, err
 	}
 	cfg := fromKoanf(ko)
+	cfg.hostsExplicit = ko.Exists("hosts") && len(cfg.Hosts) > 0
 	items, err := profile.Load(cfg.ProfilesDir)
 	if err != nil {
 		return Config{}, err
@@ -105,11 +113,12 @@ func Load(args []string, environ []string) (Config, error) {
 
 func defaults() map[string]interface{} {
 	return map[string]interface{}{
-		"sink":  map[string]interface{}{"addr": ":443", "http2": true},
-		"ops":   map[string]interface{}{"addr": "127.0.0.1:8443"},
-		"hosts": []string{}, "profiles": []string{"adshield"}, "profiles_dir": "",
+		"sink":     map[string]interface{}{"addr": ":443", "http2": true},
+		"ops":      map[string]interface{}{"addr": "127.0.0.1:8443"},
+		"profiles": []string{"adshield"}, "profiles_dir": "",
 		"hostname": "",
 		"log":      map[string]interface{}{"level": "info", "format": "json"},
+		"toast":    map[string]interface{}{"enabled": false, "details": false},
 		"pki":      map[string]interface{}{"root_cert": "", "intermediate_cert": "", "intermediate_key": "", "root_cert_file": "", "intermediate_cert_file": "", "intermediate_key_file": ""},
 		"limits":   map[string]interface{}{"max_header_bytes": 16384, "read_header_timeout": "5s", "idle_timeout": "60s", "shutdown_timeout": "10s", "shutdown_delay": "5s", "cert_cache_size": 256},
 	}
@@ -117,7 +126,7 @@ func defaults() map[string]interface{} {
 
 func envTransform(key, value string) (string, any) {
 	keys := map[string]string{
-		"ARS_SINK_ADDR": "sink.addr", "ARS_SINK_HTTP2": "sink.http2", "ARS_OPS_ADDR": "ops.addr", "ARS_HOSTS": "hosts", "ARS_PROFILES": "profiles", "ARS_PROFILES_DIR": "profiles_dir", "ARS_HOSTNAME": "hostname", "ARS_LOG_LEVEL": "log.level", "ARS_LOG_FORMAT": "log.format", "ARS_PKI_ROOT_CERT": "pki.root_cert", "ARS_PKI_INTERMEDIATE_CERT": "pki.intermediate_cert", "ARS_PKI_INTERMEDIATE_KEY": "pki.intermediate_key", "ARS_PKI_ROOT_CERT_FILE": "pki.root_cert_file", "ARS_PKI_INTERMEDIATE_CERT_FILE": "pki.intermediate_cert_file", "ARS_PKI_INTERMEDIATE_KEY_FILE": "pki.intermediate_key_file", "ARS_LIMITS_MAX_HEADER_BYTES": "limits.max_header_bytes", "ARS_LIMITS_READ_HEADER_TIMEOUT": "limits.read_header_timeout", "ARS_LIMITS_IDLE_TIMEOUT": "limits.idle_timeout", "ARS_LIMITS_SHUTDOWN_TIMEOUT": "limits.shutdown_timeout", "ARS_LIMITS_SHUTDOWN_DELAY": "limits.shutdown_delay", "ARS_LIMITS_CERT_CACHE_SIZE": "limits.cert_cache_size",
+		"ARS_SINK_ADDR": "sink.addr", "ARS_SINK_HTTP2": "sink.http2", "ARS_OPS_ADDR": "ops.addr", "ARS_HOSTS": "hosts", "ARS_PROFILES": "profiles", "ARS_PROFILES_DIR": "profiles_dir", "ARS_HOSTNAME": "hostname", "ARS_LOG_LEVEL": "log.level", "ARS_LOG_FORMAT": "log.format", "ARS_TOAST_ENABLED": "toast.enabled", "ARS_TOAST_DETAILS": "toast.details", "ARS_PKI_ROOT_CERT": "pki.root_cert", "ARS_PKI_INTERMEDIATE_CERT": "pki.intermediate_cert", "ARS_PKI_INTERMEDIATE_KEY": "pki.intermediate_key", "ARS_PKI_ROOT_CERT_FILE": "pki.root_cert_file", "ARS_PKI_INTERMEDIATE_CERT_FILE": "pki.intermediate_cert_file", "ARS_PKI_INTERMEDIATE_KEY_FILE": "pki.intermediate_key_file", "ARS_LIMITS_MAX_HEADER_BYTES": "limits.max_header_bytes", "ARS_LIMITS_READ_HEADER_TIMEOUT": "limits.read_header_timeout", "ARS_LIMITS_IDLE_TIMEOUT": "limits.idle_timeout", "ARS_LIMITS_SHUTDOWN_TIMEOUT": "limits.shutdown_timeout", "ARS_LIMITS_SHUTDOWN_DELAY": "limits.shutdown_delay", "ARS_LIMITS_CERT_CACHE_SIZE": "limits.cert_cache_size",
 	}
 	result := keys[key]
 	if result == "" {
@@ -151,6 +160,7 @@ func fromKoanf(ko *koanf.Koanf) Config {
 	cfg.Ops.Addr, cfg.Hosts, cfg.Profiles, cfg.ProfilesDir = ko.String("ops.addr"), ko.Strings("hosts"), ko.Strings("profiles"), ko.String("profiles_dir")
 	cfg.Hostname = ko.String("hostname")
 	cfg.Log.Level, cfg.Log.Format = ko.String("log.level"), ko.String("log.format")
+	cfg.Toast.Enabled, cfg.Toast.Details = ko.Bool("toast.enabled"), ko.Bool("toast.details")
 	cfg.PKI.RootCert, cfg.PKI.IntermediateCert, cfg.PKI.IntermediateKey = ko.String("pki.root_cert"), ko.String("pki.intermediate_cert"), ko.String("pki.intermediate_key")
 	cfg.PKI.RootCertFile, cfg.PKI.IntermediateCertFile, cfg.PKI.IntermediateKeyFile = ko.String("pki.root_cert_file"), ko.String("pki.intermediate_cert_file"), ko.String("pki.intermediate_key_file")
 	cfg.Limits.MaxHeaderBytes, cfg.Limits.ReadHeaderTimeout, cfg.Limits.IdleTimeout, cfg.Limits.ShutdownTimeout, cfg.Limits.CertCacheSize = ko.Int("limits.max_header_bytes"), ko.Duration("limits.read_header_timeout"), ko.Duration("limits.idle_timeout"), ko.Duration("limits.shutdown_timeout"), ko.Int("limits.cert_cache_size")
@@ -226,8 +236,30 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg Config) Routes() (*profile.Router, error) {
-	return profile.NewRouter(cfg.items, cfg.Profiles)
+	router, err := profile.NewRouter(cfg.items, cfg.Profiles)
+	if err != nil {
+		return nil, err
+	}
+	if !cfg.Toast.Enabled {
+		return router, nil
+	}
+	options, err := json.Marshal(map[string]bool{"details": cfg.Toast.Details})
+	if err != nil {
+		return nil, err
+	}
+	toast, err := profiles.FS.ReadFile("toast.js")
+	if err != nil {
+		return nil, err
+	}
+	suffix := append([]byte("\n"), toast...)
+	suffix = append(suffix, '(')
+	suffix = append(suffix, options...)
+	suffix = append(suffix, ')', ';')
+	router.AppendJavaScript(suffix)
+	return router, nil
 }
+
+func (cfg Config) HostsExplicit() bool { return cfg.hostsExplicit }
 
 func (cfg Config) RequirePKI() error {
 	if (cfg.PKI.RootCert == "" && cfg.PKI.RootCertFile == "") || (cfg.PKI.IntermediateCert == "" && cfg.PKI.IntermediateCertFile == "") || (cfg.PKI.IntermediateKey == "" && cfg.PKI.IntermediateKeyFile == "") {
@@ -244,7 +276,7 @@ func RedactedYAML(cfg Config) ([]byte, error) {
 		return "<set>"
 	}
 	return yaml.Parser().Marshal(map[string]interface{}{
-		"sink": map[string]interface{}{"addr": cfg.Sink.Addr, "http2": cfg.Sink.HTTP2}, "ops": map[string]interface{}{"addr": cfg.Ops.Addr}, "hosts": cfg.Hosts, "profiles": cfg.Profiles, "profiles_dir": cfg.ProfilesDir, "hostname": cfg.Hostname, "log": map[string]interface{}{"level": cfg.Log.Level, "format": cfg.Log.Format},
+		"sink": map[string]interface{}{"addr": cfg.Sink.Addr, "http2": cfg.Sink.HTTP2}, "ops": map[string]interface{}{"addr": cfg.Ops.Addr}, "hosts": cfg.Hosts, "profiles": cfg.Profiles, "profiles_dir": cfg.ProfilesDir, "hostname": cfg.Hostname, "log": map[string]interface{}{"level": cfg.Log.Level, "format": cfg.Log.Format}, "toast": map[string]interface{}{"enabled": cfg.Toast.Enabled, "details": cfg.Toast.Details},
 		"pki":    map[string]interface{}{"root_cert": secret(cfg.PKI.RootCert), "intermediate_cert": secret(cfg.PKI.IntermediateCert), "intermediate_key": secret(cfg.PKI.IntermediateKey), "root_cert_file": secret(cfg.PKI.RootCertFile), "intermediate_cert_file": secret(cfg.PKI.IntermediateCertFile), "intermediate_key_file": secret(cfg.PKI.IntermediateKeyFile)},
 		"limits": map[string]interface{}{"max_header_bytes": cfg.Limits.MaxHeaderBytes, "read_header_timeout": cfg.Limits.ReadHeaderTimeout.String(), "idle_timeout": cfg.Limits.IdleTimeout.String(), "shutdown_timeout": cfg.Limits.ShutdownTimeout.String(), "shutdown_delay": cfg.Limits.ShutdownDelay.String(), "cert_cache_size": cfg.Limits.CertCacheSize},
 	})

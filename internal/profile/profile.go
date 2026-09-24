@@ -204,6 +204,14 @@ func (r *Router) Hosts() []string {
 	return result
 }
 
+func (r *Router) AppendJavaScript(suffix []byte) {
+	for i := range r.routes {
+		if strings.Contains(strings.ToLower(r.routes[i].ContentType), "javascript") {
+			r.routes[i].Body = append(r.routes[i].Body, suffix...)
+		}
+	}
+}
+
 func RouteMatchesHost(route Route, host string) bool { return routeHasHost(&route, host) }
 
 func ProfileMatchesHost(item Profile, host string) bool {

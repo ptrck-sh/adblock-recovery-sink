@@ -35,22 +35,6 @@ func (c certSource) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate
 	return cert, err
 }
 
-func loadIssuer(cfg config.Config) (*pki.Issuer, error) {
-	root, err := material(cfg.PKI.RootCert, cfg.PKI.RootCertFile)
-	if err != nil {
-		return nil, err
-	}
-	intermediate, err := material(cfg.PKI.IntermediateCert, cfg.PKI.IntermediateCertFile)
-	if err != nil {
-		return nil, err
-	}
-	key, err := material(cfg.PKI.IntermediateKey, cfg.PKI.IntermediateKeyFile)
-	if err != nil {
-		return nil, err
-	}
-	return pki.Load(root, intermediate, key, pki.IssuerOptions{Hosts: cfg.Hosts, CacheSize: cfg.Limits.CertCacheSize})
-}
-
 func material(value, file string) ([]byte, error) {
 	if value != "" {
 		return []byte(value), nil
@@ -62,7 +46,7 @@ func material(value, file string) ([]byte, error) {
 	return data, nil
 }
 
-func statusProvider(issuer *pki.Issuer, cfg config.Config) func() ops.Status {
+func statusProvider(issuer *pki.Issuer, cfg config.Config, skippedHosts []string) func() ops.Status {
 	return func() ops.Status {
 		pkiStatus := ops.PKIStatus{
 			Ready:                true,
@@ -76,13 +60,28 @@ func statusProvider(issuer *pki.Issuer, cfg config.Config) func() ops.Status {
 			pkiStatus.Error = err.Error()
 		}
 		return ops.Status{
-			Version:  version,
-			Hostname: cfg.Hostname,
-			Profiles: append([]string(nil), cfg.Profiles...),
-			Hosts:    append([]string(nil), cfg.Hosts...),
-			PKI:      pkiStatus,
+			Version:      version,
+			Hostname:     cfg.Hostname,
+			Profiles:     append([]string(nil), cfg.Profiles...),
+			Hosts:        append([]string(nil), cfg.Hosts...),
+			SkippedHosts: append([]string{}, skippedHosts...),
+			PKI:          pkiStatus,
 		}
 	}
+}
+
+func effectiveHosts(root, intermediate []byte, hosts []string, explicit bool) ([]string, []string, error) {
+	if explicit {
+		return hosts, nil, nil
+	}
+	effective, skipped, err := pki.FilterHosts(root, intermediate, hosts)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(effective) == 0 {
+		return nil, nil, errors.New("no hosts permitted by CA name constraints")
+	}
+	return effective, skipped, nil
 }
 
 func main() {
@@ -145,7 +144,27 @@ func serve(args []string) error {
 		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 	}
 	logger := slog.New(handler)
-	issuer, err := loadIssuer(cfg)
+	root, err := material(cfg.PKI.RootCert, cfg.PKI.RootCertFile)
+	if err != nil {
+		return err
+	}
+	intermediate, err := material(cfg.PKI.IntermediateCert, cfg.PKI.IntermediateCertFile)
+	if err != nil {
+		return err
+	}
+	key, err := material(cfg.PKI.IntermediateKey, cfg.PKI.IntermediateKeyFile)
+	if err != nil {
+		return err
+	}
+	effective, skippedHosts, err := effectiveHosts(root, intermediate, cfg.Hosts, cfg.HostsExplicit())
+	if err != nil {
+		return err
+	}
+	if len(skippedHosts) > 0 {
+		logger.Warn("hosts skipped by CA name constraints", "hosts", skippedHosts)
+	}
+	cfg.Hosts = effective
+	issuer, err := pki.Load(root, intermediate, key, pki.IssuerOptions{Hosts: cfg.Hosts, CacheSize: cfg.Limits.CertCacheSize})
 	if err != nil {
 		return err
 	}
@@ -177,7 +196,7 @@ func serve(args []string) error {
 		return err
 	}
 	sinkServer := &http.Server{Handler: sinkHandler, TLSConfig: tlsConfig, MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
-	opsServer := &http.Server{Handler: ops.New(ready, statusProvider(issuer, cfg), enrollment, m.Registry()), MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
+	opsServer := &http.Server{Handler: ops.New(ready, statusProvider(issuer, cfg, skippedHosts), enrollment, m.Registry()), MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
 	errCh := make(chan error, 2)
 	go func() { errCh <- sinkServer.Serve(tls.NewListener(sinkListener, tlsConfig)) }()
 	go func() { errCh <- opsServer.Serve(opsListener) }()

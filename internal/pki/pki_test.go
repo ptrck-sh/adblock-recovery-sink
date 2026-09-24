@@ -98,6 +98,18 @@ func TestLoadValidationAndRestart(t *testing.T) {
 	}
 }
 
+func TestFilterHosts(t *testing.T) {
+	directory, _ := initFiles(t, []string{"allowed.example"}, time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+	root, intermediate, _ := readIssuerFiles(t, directory)
+	allowed, skipped, err := pki.FilterHosts(root, intermediate, []string{"allowed.example", "outside.example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allowed) != 1 || allowed[0] != "allowed.example" || len(skipped) != 1 || skipped[0] != "outside.example" {
+		t.Fatalf("allowed=%v skipped=%v", allowed, skipped)
+	}
+}
+
 func TestIssuerCertificatesCacheRenewalAndReadiness(t *testing.T) {
 	now := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
 	directory, _ := initFiles(t, []string{"a.example", "b.example", "c.example"}, now)

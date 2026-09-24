@@ -316,6 +316,31 @@ func Load(rootPEM, intermediatePEM, intermediateKeyPEM []byte, opts IssuerOption
 	}, nil
 }
 
+func FilterHosts(rootPEM, intermediatePEM []byte, hosts []string) ([]string, []string, error) {
+	normalized, err := normalizeHosts(hosts)
+	if err != nil {
+		return nil, nil, err
+	}
+	root, err := parseCertificate(rootPEM, "root certificate")
+	if err != nil {
+		return nil, nil, err
+	}
+	intermediate, err := parseCertificate(intermediatePEM, "intermediate certificate")
+	if err != nil {
+		return nil, nil, err
+	}
+	allowed := make([]string, 0, len(normalized))
+	skipped := make([]string, 0)
+	for _, host := range normalized {
+		if hostAllowedByCertificate(root, host) && hostAllowedByCertificate(intermediate, host) {
+			allowed = append(allowed, host)
+		} else {
+			skipped = append(skipped, host)
+		}
+	}
+	return allowed, skipped, nil
+}
+
 func (i *Issuer) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	if hello == nil {
 		return nil, errors.New("client hello is required")
