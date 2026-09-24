@@ -62,9 +62,9 @@ func Load(args []string, environ []string) (Config, error) {
 	flags.SetOutput(io.Discard)
 	flags.SetInterspersed(false)
 	flags.String("config", "", "")
-	flags.String("sink-addr", ":8443", "")
+	flags.String("sink-addr", ":443", "")
 	flags.Bool("sink-http2", true, "")
-	flags.String("ops-addr", "127.0.0.1:8080", "")
+	flags.String("ops-addr", "127.0.0.1:8443", "")
 	flags.String("hosts", "", "")
 	flags.String("profiles", "adshield", "")
 	flags.String("profiles-dir", "", "")
@@ -105,8 +105,8 @@ func Load(args []string, environ []string) (Config, error) {
 
 func defaults() map[string]interface{} {
 	return map[string]interface{}{
-		"sink":  map[string]interface{}{"addr": ":8443", "http2": true},
-		"ops":   map[string]interface{}{"addr": "127.0.0.1:8080"},
+		"sink":  map[string]interface{}{"addr": ":443", "http2": true},
+		"ops":   map[string]interface{}{"addr": "127.0.0.1:8443"},
 		"hosts": []string{}, "profiles": []string{"adshield"}, "profiles_dir": "",
 		"hostname": "",
 		"log":      map[string]interface{}{"level": "info", "format": "json"},

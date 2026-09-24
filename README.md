@@ -32,6 +32,8 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 
 `hostname` is the optional public hostname of this instance, displayed on the install page.
 
+The sink serves intercepted hosts over TLS on `:443`. The ops listener serves plain HTTP on `127.0.0.1:8443` by default: `/healthz`, `/readyz`, `/metrics`, `/status` and the enrollment pages. Binding 443 without root needs the namespaced sysctl `net.ipv4.ip_unprivileged_port_start=443` (for example `docker run --sysctl net.ipv4.ip_unprivileged_port_start=443`) or `CAP_NET_BIND_SERVICE`.
+
 ## Prior art
 
 - [tinyShield](https://github.com/FilteringDev/tinyShield)
