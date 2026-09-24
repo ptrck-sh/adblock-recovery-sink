@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="{{ lang | default(value='en') }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
+    <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+    <link rel="stylesheet" href="{{ get_url(path='site.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="{{ config.base_url }}">{{ config.title }}</a>
+      <nav aria-label="Primary navigation">
+        <a href="{{ get_url(path='@/_index.md') }}">Home</a>
+      </nav>
+    </header>
+    <main class="site-main">
+      {% block content %}{% endblock content %}
+    </main>
+  </body>
+</html>

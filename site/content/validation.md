@@ -1,6 +1,12 @@
++++
+title = "Validation"
+description = "Validation evidence for the service, PKI, and chart."
+weight = 12
++++
+
 # Validation: service, PKI and chart
 
-Date: 2026-09-23. Covers milestones 2 to 5 of the [implementation plan](anti-adshield-claude-plan.md) on branch builds; nothing was released.
+Date: 2026-09-23. Covers milestones 2 to 5 of the [implementation plan](https://gitlab.com/ptrck-sh/adblock-recovery-sink/-/blob/main/docs/anti-adshield-claude-plan.md) on branch builds; nothing was released.
 
 ## Setup
 
