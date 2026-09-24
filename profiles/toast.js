@@ -1,9 +1,6 @@
-try {
-  window.__adblockRecoveryToastScript = document.currentScript;
-} catch (_) {}
 (function (options) {
   try {
-    const script = window.__adblockRecoveryToastScript;
+    const script = document.currentScript;
     let shown = false;
     const text = (value) => document.createTextNode(value);
     const show = () => {
