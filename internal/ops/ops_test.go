@@ -12,7 +12,7 @@ import (
 )
 
 func TestEndpoints(t *testing.T) {
-	handler := New(func() error { return errors.New("not ready") }, func() Status { return Status{} }, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) }), metrics.New([]string{"adshield"}, false, 100).Registry())
+	handler := New(func() error { return errors.New("not ready") }, func() Status { return Status{} }, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) }), metrics.New([]string{"adshield"}, false, 100, 200).Registry())
 	tests := []struct {
 		path   string
 		status int
@@ -43,7 +43,7 @@ func TestStatus(t *testing.T) {
 				LeafCacheEntries:     2,
 			},
 		}
-	}, nil, metrics.New([]string{"adshield"}, false, 100).Registry())
+	}, nil, metrics.New([]string{"adshield"}, false, 100, 200).Registry())
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/status", nil))
 	if response.Code != http.StatusOK {
@@ -78,7 +78,7 @@ func TestStatus(t *testing.T) {
 func TestStatusPKIError(t *testing.T) {
 	handler := New(func() error { return nil }, func() Status {
 		return Status{PKI: PKIStatus{Ready: false, Error: "certificate expired"}}
-	}, nil, metrics.New([]string{"adshield"}, false, 100).Registry())
+	}, nil, metrics.New([]string{"adshield"}, false, 100, 200).Registry())
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/status", nil))
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"status":"ok"`) || !strings.Contains(response.Body.String(), `"error":"certificate expired"`) {

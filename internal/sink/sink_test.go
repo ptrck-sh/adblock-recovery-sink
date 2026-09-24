@@ -36,7 +36,7 @@ func bundledRouter(t *testing.T) *profile.Router {
 }
 
 func TestHandler(t *testing.T) {
-	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100), nil)
+	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil)
 	body, err := profiles.FS.ReadFile("adshield/loader.min.js")
 	if err != nil {
 		t.Fatal(err)
@@ -82,7 +82,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestHandlerSiteRequests(t *testing.T) {
-	m := metrics.New([]string{"adshield"}, true, 100)
+	m := metrics.New([]string{"adshield"}, true, 100, 200)
 	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, m, nil)
 	matched := httptest.NewRequest(http.MethodGet, "https://example/loader.min.js", nil)
 	matched.Host = "html-load.com"
@@ -108,6 +108,58 @@ func TestHandlerSiteRequests(t *testing.T) {
 	t.Fatal("site metric missing")
 }
 
+func TestHandlerUpstreamRequests(t *testing.T) {
+	m := metrics.New([]string{"adshield"}, false, 100, 1)
+	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, m, nil)
+	tests := []struct {
+		host, method, path, result string
+	}{
+		{"HTML-LOAD.COM.:443", http.MethodGet, "/loader.min.js?query=value", "matched"},
+		{"other.example", http.MethodGet, "/loader.min.js", "unknown_host"},
+		{"html-load.com", http.MethodGet, "/other", "unknown_path"},
+		{"html-load.com", http.MethodPost, "/loader.min.js", "method_not_allowed"},
+	}
+	for _, test := range tests {
+		request := httptest.NewRequest(test.method, "https://example"+test.path, nil)
+		request.Host = test.host
+		handler.ServeHTTP(httptest.NewRecorder(), request)
+	}
+	families, err := m.Registry().Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string]struct{ host, path string }{
+		"matched":            {"html-load.com", "/loader.min.js"},
+		"unknown_host":       {"other", "other"},
+		"unknown_path":       {"other", "other"},
+		"method_not_allowed": {"html-load.com", "/loader.min.js"},
+	}
+	for _, family := range families {
+		if family.GetName() != "ars_upstream_requests_total" {
+			continue
+		}
+		if len(family.Metric) != 4 {
+			t.Fatalf("upstream metrics=%+v", family.Metric)
+		}
+		for _, metric := range family.Metric {
+			labels := map[string]string{}
+			for _, label := range metric.Label {
+				labels[label.GetName()] = label.GetValue()
+			}
+			want, ok := expected[labels["result"]]
+			if !ok || labels["host"] != want.host || labels["path"] != want.path {
+				t.Fatalf("upstream labels=%v", labels)
+			}
+			delete(expected, labels["result"])
+		}
+		if len(expected) != 0 {
+			t.Fatalf("missing results=%v", expected)
+		}
+		return
+	}
+	t.Fatal("upstream metric missing")
+}
+
 type testCertSource struct{ certificate tls.Certificate }
 
 func (s testCertSource) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -124,8 +176,8 @@ func TestTLS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := newServer(t, NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100), nil))
-	server.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, true, metrics.New([]string{"adshield"}, false, 100))
+	server := newServer(t, NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil))
+	server.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, true, metrics.New([]string{"adshield"}, false, 100, 200))
 	server.StartTLS()
 	defer server.Close()
 	transport := &http.Transport{ForceAttemptHTTP2: true, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "html-load.com"}}
@@ -148,7 +200,7 @@ func TestTLS(t *testing.T) {
 	}
 	server.Close()
 	plainServer := newServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
-	plainServer.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, false, metrics.New([]string{"adshield"}, false, 100))
+	plainServer.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, false, metrics.New([]string{"adshield"}, false, 100, 200))
 	plainServer.StartTLS()
 	defer plainServer.Close()
 	plainClient := &http.Client{Transport: &http.Transport{ForceAttemptHTTP2: true, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "html-load.com"}}}

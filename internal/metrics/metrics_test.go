@@ -7,7 +7,7 @@ import (
 )
 
 func TestBoundedLabels(t *testing.T) {
-	m := New([]string{"adshield"}, false, 100)
+	m := New([]string{"adshield"}, false, 100, 200)
 	m.Request("adshield", "matched")
 	m.Request("anything", "unknown_path")
 	m.Request("adshield", "anything")
@@ -43,7 +43,7 @@ func TestRefererHost(t *testing.T) {
 }
 
 func TestSiteRequests(t *testing.T) {
-	m := New([]string{"adshield"}, true, 1)
+	m := New([]string{"adshield"}, true, 1, 200)
 	m.SiteRequest("", "matched")
 	m.SiteRequest("https://first.example", "matched")
 	m.SiteRequest("https://second.example", "matched")
@@ -60,12 +60,25 @@ func TestSiteRequests(t *testing.T) {
 }
 
 func TestSiteRequestsDisabled(t *testing.T) {
-	m := New([]string{"adshield"}, false, 1)
+	m := New([]string{"adshield"}, false, 1, 200)
 	m.SiteRequest("https://example.com", "matched")
 	for _, family := range metricFamilies(t, m) {
 		if family.GetName() == "ars_site_requests_total" {
 			t.Fatal("site metric present")
 		}
+	}
+}
+
+func TestUpstreamRequests(t *testing.T) {
+	m := New([]string{"adshield"}, false, 100, 1)
+	m.UpstreamRequest("first.example", "/first", "matched")
+	m.UpstreamRequest("second.example", "/second", "unknown_path")
+	m.UpstreamRequest("third.example", "/third", "anything")
+	if got := counterValue(t, m, "ars_upstream_requests_total", map[string]string{"host": "first.example", "path": "/first", "result": "matched"}); got != 1 {
+		t.Fatalf("first=%v", got)
+	}
+	if got := counterValue(t, m, "ars_upstream_requests_total", map[string]string{"host": "other", "path": "other", "result": "unknown_path"}); got != 1 {
+		t.Fatalf("other=%v", got)
 	}
 }
 
