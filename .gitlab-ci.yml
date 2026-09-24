@@ -68,7 +68,9 @@ include:
       dest_registry: ghcr.io
       dest_username: pulsar501
       dest_password: $GH_TOKEN_CLASSIC
-      needs_latest: []
+      needs_latest:
+        - job: container:build
+          optional: true
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-tag@0.23.0
     inputs:
       prefix: "dockerhub:"
@@ -77,7 +79,9 @@ include:
       dest_registry: docker.io
       dest_username: $DOCKERHUB_USERNAME
       dest_password: $DOCKERHUB_TOKEN
-      needs_latest: []
+      needs_latest:
+        - job: container:build
+          optional: true
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-tag@0.23.0
     inputs:
       prefix: "quay:"
@@ -86,7 +90,9 @@ include:
       dest_registry: quay.io
       dest_username: $QUAY_USERNAME
       dest_password: $QUAY_TOKEN
-      needs_latest: []
+      needs_latest:
+        - job: container:build
+          optional: true
 
 go:build:
   stage: build
