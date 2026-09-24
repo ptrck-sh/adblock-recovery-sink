@@ -1,11 +1,48 @@
 version: 1
 name: adshield
 routes:
-  - hosts: [html-load.com, fb.html-load.com, 1.s.html-load.com, 3.s.html-load.com, 8.s.html-load.com, content-loader.com, fb.content-loader.com, 1.content-loader.com, 2.content-loader.com, js-loader.com, css-load.com, d37j8pfxu2iogi.cloudfront.net]
+  - hosts: &hosts
+      - html-load.com
+      - fb.html-load.com
+      - 1.s.html-load.com
+      - 3.s.html-load.com
+      - 8.s.html-load.com
+      - content-loader.com
+      - fb.content-loader.com
+      - 1.content-loader.com
+      - 2.content-loader.com
+      - js-loader.com
+      - css-load.com
+      - d37j8pfxu2iogi.cloudfront.net
+      - dkyerkk91s4fa.cloudfront.net
     path: /loader.min.js
-    methods: [GET, HEAD]
+    methods: &methods [GET, HEAD]
     status: 200
-    content_type: "text/javascript; charset=utf-8"
+    content_type: &type "text/javascript; charset=utf-8"
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /app.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /vendor.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /main.js
+    methods: *methods
+    status: 200
+    content_type: *type
     cache_control: no-store
     cors_origin: "*"
     body_file: loader.min.js
