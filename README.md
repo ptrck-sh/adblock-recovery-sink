@@ -6,7 +6,11 @@ The sink sits behind DNS rewrites that you manage on your LAN resolver (AdGuard 
 
 ## Status
 
-Scaffold only. No functionality yet.
+Scaffold only. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md); the service itself is not implemented yet.
+
+## Trust model
+
+Run your own instance and never enroll devices in someone else's. Installing an instance's root certificate lets its operator impersonate any website to your devices, and the sink delivers JavaScript that runs inside the pages you visit. Only trust a root you generated yourself.
 
 ## Prior art
 
