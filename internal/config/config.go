@@ -57,8 +57,7 @@ type Config struct {
 		ShutdownDelay     time.Duration
 		CertCacheSize     int
 	}
-	items         map[string]profile.Profile
-	hostsExplicit bool
+	items map[string]profile.Profile
 }
 
 func Load(args []string, environ []string) (Config, error) {
@@ -99,7 +98,6 @@ func Load(args []string, environ []string) (Config, error) {
 		return Config{}, err
 	}
 	cfg := fromKoanf(ko)
-	cfg.hostsExplicit = ko.Exists("hosts") && len(cfg.Hosts) > 0
 	items, err := profile.Load(cfg.ProfilesDir)
 	if err != nil {
 		return Config{}, err
@@ -113,9 +111,9 @@ func Load(args []string, environ []string) (Config, error) {
 
 func defaults() map[string]interface{} {
 	return map[string]interface{}{
-		"sink":     map[string]interface{}{"addr": ":443", "http2": true},
-		"ops":      map[string]interface{}{"addr": "127.0.0.1:8443"},
-		"profiles": []string{"adshield"}, "profiles_dir": "",
+		"sink":  map[string]interface{}{"addr": ":443", "http2": true},
+		"ops":   map[string]interface{}{"addr": "127.0.0.1:8443"},
+		"hosts": []string{}, "profiles": []string{"adshield"}, "profiles_dir": "",
 		"hostname": "",
 		"log":      map[string]interface{}{"level": "info", "format": "json"},
 		"toast":    map[string]interface{}{"enabled": false, "details": false},
@@ -258,8 +256,6 @@ func (cfg Config) Routes() (*profile.Router, error) {
 	router.AppendJavaScript(suffix)
 	return router, nil
 }
-
-func (cfg Config) HostsExplicit() bool { return cfg.hostsExplicit }
 
 func (cfg Config) RequirePKI() error {
 	if (cfg.PKI.RootCert == "" && cfg.PKI.RootCertFile == "") || (cfg.PKI.IntermediateCert == "" && cfg.PKI.IntermediateCertFile == "") || (cfg.PKI.IntermediateKey == "" && cfg.PKI.IntermediateKeyFile == "") {

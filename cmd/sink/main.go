@@ -70,10 +70,7 @@ func statusProvider(issuer *pki.Issuer, cfg config.Config, skippedHosts []string
 	}
 }
 
-func effectiveHosts(root, intermediate []byte, hosts []string, explicit bool) ([]string, []string, error) {
-	if explicit {
-		return hosts, nil, nil
-	}
+func effectiveHosts(root, intermediate []byte, hosts []string) ([]string, []string, error) {
 	effective, skipped, err := pki.FilterHosts(root, intermediate, hosts)
 	if err != nil {
 		return nil, nil, err
@@ -156,7 +153,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	effective, skippedHosts, err := effectiveHosts(root, intermediate, cfg.Hosts, cfg.HostsExplicit())
+	effective, skippedHosts, err := effectiveHosts(root, intermediate, cfg.Hosts)
 	if err != nil {
 		return err
 	}

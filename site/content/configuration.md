@@ -27,7 +27,7 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 | `pki.intermediate_cert_file` | empty | `ARS_PKI_INTERMEDIATE_CERT_FILE` | |
 | `pki.intermediate_key_file` | empty | `ARS_PKI_INTERMEDIATE_KEY_FILE` | |
 
-`hosts` and `profiles` are comma-separated in environment variables and flags. When `hosts` is unset, the service derives it from enabled profiles, filters it to the root and intermediate CA name constraints, and reports skipped hosts on `/status`. It fails if none remain. Explicit hosts remain strict: every configured host must be provided by an enabled profile and permitted by the CA. `hostname` is an optional public name shown on `/install`.
+`hosts` and `profiles` are comma-separated in environment variables and flags. When `hosts` is unset, the service derives it from enabled profiles. Every configured host must be provided by an enabled profile. Hosts outside the root and intermediate CA name constraints are skipped with a warning and listed as `skipped_hosts` on `/status`, so an older CA keeps working with a longer host list. The service fails if no host remains. `hostname` is an optional public name shown on `/install`.
 
 When `toast.enabled` is true, JavaScript responses show a brief local confirmation after the first loader handshake. Set `toast.details` to include the script host and path.
 

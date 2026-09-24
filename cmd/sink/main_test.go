@@ -22,21 +22,14 @@ func TestEffectiveHosts(t *testing.T) {
 		t.Fatal(err)
 	}
 	hosts := []string{"allowed.example", "outside.example"}
-	effective, skipped, err := effectiveHosts(root, intermediate, hosts, false)
+	effective, skipped, err := effectiveHosts(root, intermediate, hosts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(effective) != 1 || effective[0] != "allowed.example" || len(skipped) != 1 || skipped[0] != "outside.example" {
 		t.Fatalf("effective=%v skipped=%v", effective, skipped)
 	}
-	effective, skipped, err = effectiveHosts(root, intermediate, hosts, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(effective) != 2 || len(skipped) != 0 {
-		t.Fatalf("effective=%v skipped=%v", effective, skipped)
-	}
-	if _, _, err := effectiveHosts(root, intermediate, []string{"outside.example"}, false); err == nil {
+	if _, _, err := effectiveHosts(root, intermediate, []string{"outside.example"}); err == nil {
 		t.Fatal("accepted no permitted hosts")
 	}
 }
