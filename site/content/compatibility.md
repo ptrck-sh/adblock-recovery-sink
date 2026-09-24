@@ -85,7 +85,7 @@ On the Raptive sites the primary `html-load.com/loader.min.js` is enough: fallba
 
 Other integrations name the loader differently. `tomshardware.com` (2026-09-24) runs the same light SDK (`data-sdk="l/1.2.10"`) but starts at `html-load.com/app.js` and then tries `fb.html-load.com/vendor.js`, `dkyerkk91s4fa.cloudfront.net/main.js`, `content-loader.com/app.js` and `fb.content-loader.com/vendor.js`. Success is the same `*_as_req`/`*_as_res` handshake. Serving the unchanged stub on those paths kept the page intact in Chromium and Firefox: no dialogs, no `error-report.com` request, all stylesheets present.
 
-A host that answers `404` still advances the fallback chain, so the bundled profile serves the stub on `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` for every known host, including the numbered subdomains, `js-loader.com` and `css-load.com` from [Jacob Desforges' research](https://jacobdesforges.com/adshield-ad-reinsertion/).
+A host that answers `404` still advances the fallback chain, so the bundled profile serves the stub on `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` for every known domain and all of its subdomains, including `js-loader.com`, `css-load.com` and the numbered subdomains from [Jacob Desforges' research](https://jacobdesforges.com/adshield-ad-reinsertion/).
 
 ## Browser restrictions
 
@@ -117,7 +117,7 @@ test/smoke/run.sh firefox https://pinchofyum.com/6-ingredient-espresso-brownies 
 test/smoke/run.sh chromium https://pinchofyum.com/6-ingredient-espresso-brownies control notrust
 ```
 
-The fixture page sets its title to `ok` when the handshake succeeds. Live-site runs print loader hosts, dialog count, navigations and the final stylesheet count. These are manual smoke tests. The CI job `e2e:browser` runs `test/e2e/run.sh`, which starts the real `sink` binary with the toast enabled and checks the handshake and toast in Chromium for five loader URLs.
+The fixture page sets its title to `ok` when the handshake succeeds. Live-site runs print loader hosts, dialog count, navigations and the final stylesheet count. These are manual smoke tests. The CI job `e2e:browser` runs `test/e2e/run.sh`, which starts the real `sink` binary with the toast enabled and checks the handshake and toast in Chromium for seven loader URLs, two of them numbered subdomains matched only by a wildcard.
 
 ## Prior art
 

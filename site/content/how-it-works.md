@@ -4,7 +4,7 @@ description = "The supported loader contract and the TLS request flow."
 weight = 2
 +++
 
-The bundled Ad-Shield light profile serves the same stub as `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` on `html-load.com`, `fb.html-load.com`, `1.s.html-load.com`, `3.s.html-load.com`, `8.s.html-load.com`, `content-loader.com`, `fb.content-loader.com`, `1.content-loader.com`, `2.content-loader.com`, `js-loader.com`, `css-load.com`, `d37j8pfxu2iogi.cloudfront.net`, and `dkyerkk91s4fa.cloudfront.net`. Sites name the loader differently, but every observed variant runs the same light handshake. See [Compatibility](@/compatibility.md) for the observed loader contract and test results.
+The bundled Ad-Shield light profile serves the same stub as `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` on `html-load.com`, `content-loader.com`, `js-loader.com` and `css-load.com` with all their subdomains (`*.html-load.com` and so on), plus `d37j8pfxu2iogi.cloudfront.net` and `dkyerkk91s4fa.cloudfront.net`. Wildcards cover the numbered subdomains Ad-Shield rotates through, such as `1.s.html-load.com` and `2.content-loader.com`. Sites name the loader differently, but every observed variant runs the same light handshake. See [Compatibility](@/compatibility.md) for the observed loader contract and test results.
 
 The page's recovery code loads that script after its blocked detection path. The replacement replies to same-window request messages that the recovery code expects. It loads no additional resources.
 
