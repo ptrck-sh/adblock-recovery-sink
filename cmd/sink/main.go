@@ -165,7 +165,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	m := metrics.New(cfg.Profiles)
+	m := metrics.New(cfg.Profiles, cfg.Metrics.Sites.Enabled, cfg.Metrics.Sites.Max)
 	m.SetIssuerExpiry(float64(issuer.ExpiresAt().Unix()))
 	certs := certSource{issuer: issuer, metrics: m}
 	var draining atomic.Bool

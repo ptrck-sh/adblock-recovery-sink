@@ -74,6 +74,7 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	case profile.Matched:
 		h.setRouteHeaders(writer, route)
 		h.metrics.Request(route.Profile, string(result))
+		h.metrics.SiteRequest(request.Referer(), string(result))
 		writer.WriteHeader(route.Status)
 		if request.Method != http.MethodHead {
 			_, _ = writer.Write(route.Body)
