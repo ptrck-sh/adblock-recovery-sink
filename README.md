@@ -4,9 +4,11 @@ Serves harmless replacements for known anti-adblock loader resources, so pages s
 
 The sink sits behind DNS rewrites that you manage on your LAN resolver (AdGuard Home, NextDNS, or similar). The application never changes DNS.
 
+Documentation: <https://ptrck-sh.gitlab.io/adblock-recovery-sink>
+
 ## Status
 
-Version 0.1.0. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md) and the service, PKI and chart are validated in [docs/validation.md](docs/validation.md).
+Version 0.1.0. The substitution approach is proven in the [compatibility report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/compatibility/) and the service, PKI and chart are validated in the [validation report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/validation/).
 
 ## Generate the CA
 

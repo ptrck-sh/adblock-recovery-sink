@@ -1,0 +1,22 @@
+base_url = "https://ptrck-sh.gitlab.io/adblock-recovery-sink"
+title = "adblock-recovery-sink"
+description = "Documentation for adblock-recovery-sink."
+default_language = "en"
+compile_sass = true
+minify_html = true
+generate_feeds = false
+build_search_index = true
+
+[markdown]
+smart_punctuation = true
+
+[markdown.highlighting]
+theme = "github-dark"
+
+[search]
+include_title = true
+include_description = true
+include_content = true
+
+[extra]
+owner = "Documentation"

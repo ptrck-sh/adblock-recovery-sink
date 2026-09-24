@@ -1,6 +1,12 @@
++++
+title = "Compatibility"
+description = "Compatibility evidence for the Ad-Shield light loader profile."
+weight = 11
++++
+
 # Compatibility report: Ad-Shield light loader
 
-Date: 2026-09-23. Milestone 1 of the [implementation plan](anti-adshield-claude-plan.md).
+Date: 2026-09-23. Milestone 1 of the [implementation plan](https://gitlab.com/ptrck-sh/adblock-recovery-sink/-/blob/main/docs/anti-adshield-claude-plan.md).
 
 ## Verdict
 
@@ -28,7 +34,7 @@ Raptive ships two inline scripts, `adblock-detection-*` and `adblock-recovery-*`
 6. A second inline guard checks that `script#Tqgkgu` exists and that a `data:` script executes within 251 ms.
 7. The `essential` mode injects a different obfuscated inline script tagged `html-load.cc`. None of the tested sites use it; it is unsupported.
 
-The replacement in [`profiles/adshield/loader.min.js`](../profiles/adshield/loader.min.js) answers step 3 and nothing else: it replies to `*_as_req` messages from the same window. It loads no further resources.
+The replacement in [`profiles/adshield/loader.min.js`](https://gitlab.com/ptrck-sh/adblock-recovery-sink/-/blob/main/profiles/adshield/loader.min.js) answers step 3 and nothing else: it replies to `*_as_req` messages from the same window. It loads no further resources.
 
 ## Results
 

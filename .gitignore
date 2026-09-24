@@ -27,5 +27,6 @@ desktop.ini
 # caches
 .cache/
 dist/
+public/
 
 test/smoke/.work/

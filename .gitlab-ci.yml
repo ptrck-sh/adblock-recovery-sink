@@ -3,6 +3,7 @@ stages:
   - test
   - build
   - push
+  - pages
 
 workflow:
   rules:
@@ -59,6 +60,33 @@ include:
       to_image_tag: $CI_COMMIT_TAG
     rules:
       - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-tag@0.23.0
+    inputs:
+      prefix: "ghcr:"
+      stage: push
+      to_image: ghcr.io/ptrck-sh/adblock-recovery-sink
+      dest_registry: ghcr.io
+      dest_username: pulsar501
+      dest_password: $GH_TOKEN_CLASSIC
+      needs_latest: []
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-tag@0.23.0
+    inputs:
+      prefix: "dockerhub:"
+      stage: push
+      to_image: docker.io/ptrcksh/adblock-recovery-sink
+      dest_registry: docker.io
+      dest_username: $DOCKERHUB_USERNAME
+      dest_password: $DOCKERHUB_TOKEN
+      needs_latest: []
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/container-tag@0.23.0
+    inputs:
+      prefix: "quay:"
+      stage: push
+      to_image: quay.io/ptrck-sh/adblock-recovery-sink
+      dest_registry: quay.io
+      dest_username: $QUAY_USERNAME
+      dest_password: $QUAY_TOKEN
+      needs_latest: []
 
 go:build:
   stage: build
@@ -78,3 +106,48 @@ go:build:
   rules:
     - if: $CI_COMMIT_BRANCH
     - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$/
+
+pages:
+  stage: pages
+  image: docker.io/library/debian:bookworm-slim
+  variables:
+    ZOLA_VERSION: "0.22.1"
+  before_script:
+    - apt-get update
+    - apt-get install --no-install-recommends --yes ca-certificates curl tar
+    - curl --location --fail --output /tmp/zola.tar.gz "https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+    - tar -xzf /tmp/zola.tar.gz -C /usr/local/bin zola
+  script:
+    - zola --root site build --output-dir public
+  artifacts:
+    paths: [public]
+  pages: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+docs:build:
+  stage: pages
+  image: docker.io/library/debian:bookworm-slim
+  variables:
+    ZOLA_VERSION: "0.22.1"
+  before_script:
+    - apt-get update
+    - apt-get install --no-install-recommends --yes ca-certificates curl tar
+    - curl --location --fail --output /tmp/zola.tar.gz "https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+    - tar -xzf /tmp/zola.tar.gz -C /usr/local/bin zola
+  script:
+    - zola --root site build --output-dir public
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+ghcr:container:tag:gittag:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+
+dockerhub:container:tag:gittag:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
+
+quay:container:tag:gittag:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
