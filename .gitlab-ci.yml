@@ -115,6 +115,7 @@ go:build:
 
 pages:
   stage: pages
+  needs: []
   image: docker.io/library/debian:bookworm-slim
   variables:
     ZOLA_VERSION: "0.22.1"
