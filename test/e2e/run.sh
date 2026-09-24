@@ -10,6 +10,8 @@ sink="${SINK_BIN:-$work/sink}"
 urls=(
 	https://html-load.com/loader.min.js
 	https://fb.html-load.com/vendor.js
+	https://7.s.html-load.com/loader.min.js
+	https://3.content-loader.com/vendor.js
 	https://html-load.com/app.js
 	https://content-loader.com/app.js
 	https://dkyerkk91s4fa.cloudfront.net/main.js
