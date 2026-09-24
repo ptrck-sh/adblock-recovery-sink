@@ -5,7 +5,7 @@ Date: 2026-09-23. Covers milestones 2 to 5 of the [implementation plan](anti-ads
 ## Setup
 
 - Image `registry.gitlab.com/ptrck-sh/adblock-recovery-sink:feat-service-core` (linux/amd64 and linux/arm64) from the branch pipeline.
-- Chart branch `feat/chart-baseline` in the `agent-workload` namespace of the aurora k3s cluster, default Traefik mode, with `routing.traefik.annotations` set to the cluster's `kubernetes.io/ingress.class`.
+- Chart branch `feat/chart-baseline` in a test namespace of a k3s cluster (Raspberry Pi nodes), default Traefik mode, with `routing.traefik.annotations` set to the cluster's `kubernetes.io/ingress.class`.
 - Test PKI: a 30-day root and intermediate, both name-constrained to `html-load.com`, stored as an externally created Secret and referenced through `pki.existingSecret`.
 - Clients: headless Chromium and Firefox through a CONNECT proxy that sends `html-load.com:443` to the Traefik load balancer, and Chrome 153 on Android 16 with a host-resolver mapping to the same address.
 
