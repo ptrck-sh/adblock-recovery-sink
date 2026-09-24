@@ -6,7 +6,7 @@ The sink sits behind DNS rewrites that you manage on your LAN resolver (AdGuard 
 
 ## Status
 
-Release candidates. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md) and the service, PKI and chart are validated in [docs/validation.md](docs/validation.md).
+Version 0.1.0. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md) and the service, PKI and chart are validated in [docs/validation.md](docs/validation.md).
 
 ## Generate the CA
 
@@ -24,7 +24,7 @@ With the published image:
 mkdir -p ars-pki
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   -v "$PWD/ars-pki:/out" \
-  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0-rc.3 \
+  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0 \
   pki init --hosts html-load.com --out /out
 ```
 
