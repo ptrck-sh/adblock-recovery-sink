@@ -24,7 +24,7 @@ With the published image:
 mkdir -p ars-pki
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   -v "$PWD/ars-pki:/out" \
-  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0-rc.2 \
+  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0-rc.3 \
   pki init --hosts html-load.com --out /out
 ```
 
