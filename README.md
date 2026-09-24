@@ -8,7 +8,7 @@ Documentation: <https://ptrck-sh.gitlab.io/adblock-recovery-sink>
 
 ## Status
 
-Version 0.1.0. The substitution approach is proven in the [compatibility report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/compatibility/) and the service, PKI and chart are validated in the [validation report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/validation/).
+Version 0.1.1. The substitution approach is proven in the [compatibility report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/compatibility/) and the service, PKI and chart are validated in the [validation report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/validation/).
 
 ## Generate the CA
 
@@ -26,7 +26,7 @@ With the published image:
 mkdir -p ars-pki
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   -v "$PWD/ars-pki:/out" \
-  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0 \
+  quay.io/ptrck-sh/adblock-recovery-sink:0.1.1 \
   pki init --hosts html-load.com --out /out
 ```
 

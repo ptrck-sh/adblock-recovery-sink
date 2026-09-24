@@ -14,7 +14,7 @@ To use the published image:
 
 ```sh
 mkdir -p ars-pki
-docker run --rm --network none --read-only --user "$(id -u):$(id -g)" -v "$PWD/ars-pki:/out" registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0 pki init --hosts html-load.com --out /out
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" -v "$PWD/ars-pki:/out" quay.io/ptrck-sh/adblock-recovery-sink:0.1.1 pki init --hosts html-load.com --out /out
 ```
 
 On an SELinux host, add `:Z` to the Podman volume mount.
@@ -22,7 +22,7 @@ On an SELinux host, add `:Z` to the Podman volume mount.
 Start the container with the three files required by the service. The sink listener is TLS on port `443`; the operations and enrollment listener is plain HTTP on `8443` by default.
 
 ```sh
-docker run --rm --publish 443:443 --publish 8443:8443 --sysctl net.ipv4.ip_unprivileged_port_start=443 -v "$PWD/ars-pki:/pki:ro" -e ARS_PKI_ROOT_CERT_FILE=/pki/root.crt -e ARS_PKI_INTERMEDIATE_CERT_FILE=/pki/intermediate.crt -e ARS_PKI_INTERMEDIATE_KEY_FILE=/pki/intermediate.key registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0 serve
+docker run --rm --publish 443:443 --publish 8443:8443 --sysctl net.ipv4.ip_unprivileged_port_start=443 -v "$PWD/ars-pki:/pki:ro" -e ARS_PKI_ROOT_CERT_FILE=/pki/root.crt -e ARS_PKI_INTERMEDIATE_CERT_FILE=/pki/intermediate.crt -e ARS_PKI_INTERMEDIATE_KEY_FILE=/pki/intermediate.key quay.io/ptrck-sh/adblock-recovery-sink:0.1.1 serve
 ```
 
 Binding port `443` as a non-root container user requires the shown namespaced sysctl or `CAP_NET_BIND_SERVICE`.
