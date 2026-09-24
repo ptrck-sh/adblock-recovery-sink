@@ -31,6 +31,16 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 
 When `toast.enabled` is true, JavaScript responses show a brief local confirmation after the first loader handshake. Set `toast.details` to include the script host and path.
 
+## Metrics
+
+| Key | Default | Environment | Flag |
+| --- | --- | --- | --- |
+| `metrics.sites.enabled` | `false` | `ARS_METRICS_SITES_ENABLED` | — |
+| `metrics.sites.max` | `100` | `ARS_METRICS_SITES_MAX` | — |
+| `metrics.upstreams.max` | `200` | `ARS_METRICS_UPSTREAMS_MAX` | — |
+
+Site metrics record which sites the operator's users visit, so they are off by default. Both maximum values bound metric label cardinality. Pages with a no-referrer policy appear as `unknown` when site metrics are enabled.
+
 ## Limits
 
 | Key | Default | Environment | Flag |
