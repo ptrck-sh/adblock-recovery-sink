@@ -51,6 +51,7 @@ type Issuer struct {
 	intermediate *x509.Certificate
 	key          *ecdsa.PrivateKey
 	hosts        map[string]struct{}
+	suffixes     []string
 	now          func() time.Time
 	leafValidity time.Duration
 	cacheSize    int
@@ -238,7 +239,7 @@ func RunInit(args []string, stdout io.Writer) error {
 }
 
 func Load(rootPEM, intermediatePEM, intermediateKeyPEM []byte, opts IssuerOptions) (*Issuer, error) {
-	hosts, err := normalizeHosts(opts.Hosts)
+	hosts, err := normalizePatterns(opts.Hosts)
 	if err != nil {
 		return nil, err
 	}
@@ -284,10 +285,10 @@ func Load(rootPEM, intermediatePEM, intermediateKeyPEM []byte, opts IssuerOption
 		return nil, fmt.Errorf("intermediate does not chain to root: %w", err)
 	}
 	for _, host := range hosts {
-		if !hostAllowedByCertificate(root, host) {
+		if !patternAllowedByCertificate(root, host) {
 			return nil, fmt.Errorf("host %q is outside root name constraints", host)
 		}
-		if !hostAllowedByCertificate(intermediate, host) {
+		if !patternAllowedByCertificate(intermediate, host) {
 			return nil, fmt.Errorf("host %q is outside intermediate name constraints", host)
 		}
 	}
@@ -300,7 +301,12 @@ func Load(rootPEM, intermediatePEM, intermediateKeyPEM []byte, opts IssuerOption
 		leafValidity = defaultLeafValidity
 	}
 	hostSet := make(map[string]struct{}, len(hosts))
+	suffixes := make([]string, 0)
 	for _, host := range hosts {
+		if suffix, ok := strings.CutPrefix(host, "*."); ok {
+			suffixes = append(suffixes, suffix)
+			continue
+		}
 		hostSet[host] = struct{}{}
 	}
 	return &Issuer{
@@ -308,12 +314,38 @@ func Load(rootPEM, intermediatePEM, intermediateKeyPEM []byte, opts IssuerOption
 		intermediate: intermediate,
 		key:          key,
 		hosts:        hostSet,
+		suffixes:     suffixes,
 		now:          now,
 		leafValidity: leafValidity,
 		cacheSize:    cacheSize,
 		cache:        make(map[string]*list.Element),
 		lru:          list.New(),
 	}, nil
+}
+
+func FilterHosts(rootPEM, intermediatePEM []byte, hosts []string) ([]string, []string, error) {
+	normalized, err := normalizePatterns(hosts)
+	if err != nil {
+		return nil, nil, err
+	}
+	root, err := parseCertificate(rootPEM, "root certificate")
+	if err != nil {
+		return nil, nil, err
+	}
+	intermediate, err := parseCertificate(intermediatePEM, "intermediate certificate")
+	if err != nil {
+		return nil, nil, err
+	}
+	allowed := make([]string, 0, len(normalized))
+	skipped := make([]string, 0)
+	for _, host := range normalized {
+		if patternAllowedByCertificate(root, host) && patternAllowedByCertificate(intermediate, host) {
+			allowed = append(allowed, host)
+		} else {
+			skipped = append(skipped, host)
+		}
+	}
+	return allowed, skipped, nil
 }
 
 func (i *Issuer) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -326,7 +358,7 @@ func (i *Issuer) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, e
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	if _, ok := i.hosts[host]; !ok {
+	if !i.allows(host) {
 		return nil, fmt.Errorf("SNI %q is not configured", host)
 	}
 	now := i.now()
@@ -658,4 +690,58 @@ func clock(now func() time.Time) func() time.Time {
 		return now
 	}
 	return time.Now
+}
+
+func (i *Issuer) allows(host string) bool {
+	if !hostAllowedByCertificate(i.root, host) || !hostAllowedByCertificate(i.intermediate, host) {
+		return false
+	}
+	if _, ok := i.hosts[host]; ok {
+		return true
+	}
+	for _, suffix := range i.suffixes {
+		if strings.HasSuffix(host, "."+suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizePatterns(hosts []string) ([]string, error) {
+	if len(hosts) == 0 {
+		return nil, errors.New("at least one host is required")
+	}
+	result := make([]string, 0, len(hosts))
+	seen := make(map[string]struct{}, len(hosts))
+	for _, host := range hosts {
+		normalized, err := normalizePattern(host)
+		if err != nil {
+			return nil, fmt.Errorf("invalid host %q: %w", host, err)
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result, nil
+}
+
+func normalizePattern(host string) (string, error) {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if suffix, ok := strings.CutPrefix(host, "*."); ok {
+		normalized, err := normalizeHost(suffix)
+		if err != nil {
+			return "", err
+		}
+		return "*." + normalized, nil
+	}
+	return normalizeHost(host)
+}
+
+func patternAllowedByCertificate(cert *x509.Certificate, pattern string) bool {
+	if suffix, ok := strings.CutPrefix(pattern, "*."); ok {
+		return hostAllowedByCertificate(cert, "subdomain."+suffix)
+	}
+	return hostAllowedByCertificate(cert, pattern)
 }

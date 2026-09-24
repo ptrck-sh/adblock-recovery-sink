@@ -14,7 +14,7 @@
   });
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const loader = document.createElement("script");
-  loader.src = "https://html-load.com/loader.min.js";
+  loader.src = new URLSearchParams(location.search).get("src") || "https://html-load.com/loader.min.js";
   loader.onerror = () => { document.title = "fail: load"; };
   loader.onload = async () => {
     for (const delay of [0, 100, 500, 1000]) {

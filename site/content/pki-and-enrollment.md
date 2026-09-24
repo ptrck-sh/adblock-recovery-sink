@@ -8,6 +8,14 @@ weight = 5
 
 Both CA certificates have critical DNS name constraints for the supplied hosts. This limits the CA's certificate authority to the intercepted names, but a trusted root remains powerful. Run your own instance, verify its fingerprint, and retain `root.key` offline.
 
+Initialize a CA for the bundled hosts with registrable domains so the constraints also cover their subdomains:
+
+```sh
+sink pki init --hosts html-load.com,content-loader.com,js-loader.com,css-load.com,d37j8pfxu2iogi.cloudfront.net,dkyerkk91s4fa.cloudfront.net --out ./pki
+```
+
+Existing CAs constrained to `html-load.com` keep working, but cover only that domain and its subdomains. Re-enroll with a new CA to cover the other loader hosts.
+
 The service needs `root.crt`, `intermediate.crt`, and `intermediate.key`. It does not need `root.key`. Use the offline root to issue a replacement intermediate when rotating an intermediate. A new root requires installing the new root on every enrolled device before it can be used.
 
 ## Enrollment endpoints

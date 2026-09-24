@@ -56,6 +56,22 @@ func TestRouterResults(t *testing.T) {
 	}
 }
 
+func TestAppendJavaScript(t *testing.T) {
+	router, err := NewRouter(map[string]Profile{"test": {Name: "test", Routes: []Route{
+		{Profile: "test", Hosts: []string{"script.example"}, Path: "/script", Methods: []string{"GET"}, ContentType: "text/javascript; charset=utf-8", Body: []byte("script")},
+		{Profile: "test", Hosts: []string{"text.example"}, Path: "/text", Methods: []string{"GET"}, ContentType: "text/plain", Body: []byte("text")},
+	}}}, []string{"test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	router.AppendJavaScript([]byte(" toast"))
+	script, _ := router.Match("script.example", "GET", "/script")
+	plain, _ := router.Match("text.example", "GET", "/text")
+	if string(script.Body) != "script toast" || string(plain.Body) != "text" {
+		t.Fatalf("script=%q plain=%q", script.Body, plain.Body)
+	}
+}
+
 func TestOperatorOverride(t *testing.T) {
 	dir := t.TempDir()
 	profileDir := filepath.Join(dir, "adshield")

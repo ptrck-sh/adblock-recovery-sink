@@ -4,20 +4,20 @@ description = "The supported loader contract and the TLS request flow."
 weight = 2
 +++
 
-The bundled Ad-Shield light profile handles one resource: `https://html-load.com/loader.min.js`. See [Compatibility](@/compatibility.md) for the observed loader contract and test results.
+The bundled Ad-Shield light profile serves the same stub as `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` on `html-load.com`, `content-loader.com`, `js-loader.com` and `css-load.com` with all their subdomains (`*.html-load.com` and so on), plus `d37j8pfxu2iogi.cloudfront.net` and `dkyerkk91s4fa.cloudfront.net`. Wildcards cover the numbered subdomains Ad-Shield rotates through, such as `1.s.html-load.com` and `2.content-loader.com`. Sites name the loader differently, but every observed variant runs the same light handshake. See [Compatibility](@/compatibility.md) for the observed loader contract and test results.
 
 The page's recovery code loads that script after its blocked detection path. The replacement replies to same-window request messages that the recovery code expects. It loads no additional resources.
 
 ## Request flow
 
-1. Your DNS resolver rewrites `html-load.com` to the sink.
-2. The browser opens TLS with `html-load.com` as SNI.
+1. Your DNS resolver rewrites the requested loader host to the sink.
+2. The browser opens TLS with that host as SNI.
 3. The sink accepts only configured SNI names and issues a short-lived leaf certificate from your intermediate CA.
-4. The sink matches `GET` or `HEAD /loader.min.js` and returns the bundled stub with `Cache-Control: no-store`.
+4. The sink matches `GET` or `HEAD` on one of the loader paths and returns the bundled stub with `Cache-Control: no-store`.
 5. The page receives the expected reply and does not enter its loader-failure path.
 
 TLS is required because the page requests HTTPS. A public certificate cannot validate for an intercepted third-party name, so the device must trust a CA you operate. The generated root and intermediate both carry critical DNS name constraints, limiting certificates to the names you supplied.
 
 ## Host scope
 
-The bundled profile supports `html-load.com` only. It does not serve rotating fallback names, `essential` mode, or unrelated loader integrations. Unknown SNI is rejected during TLS; an allowed host with an unknown path receives `404`.
+The bundled profile supports the listed loader hosts. It does not serve `essential` mode or unrelated loader integrations. Unknown SNI is rejected during TLS; an allowed host with an unknown path receives `404`.
