@@ -8,6 +8,23 @@ The sink sits behind DNS rewrites that you manage on your LAN resolver (AdGuard 
 
 Scaffold only. The substitution approach is proven in [docs/compatibility.md](docs/compatibility.md); the service itself is not implemented yet.
 
+## Generate the CA
+
+Run `pki init` once, offline, with the published image. It writes a root and an intermediate, both name-constrained to the given hosts, and refuses to overwrite existing files:
+
+```sh
+mkdir -p ars-pki
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+  -v "$PWD/ars-pki:/out" \
+  registry.gitlab.com/ptrck-sh/adblock-recovery-sink:0.1.0-rc.2 \
+  pki init --hosts html-load.com --out /out \
+    --k8s-secret adblock-recovery-sink-pki --namespace adblock-recovery-sink
+```
+
+With Podman, use the same command and add `:Z` to the volume on SELinux hosts. The directory then holds `root.crt`, `root.key`, `intermediate.crt`, `intermediate.key` and, with `--k8s-secret`, a `secret.yaml` that omits `root.key`. The command prints the root SHA-256 fingerprint.
+
+The running service needs only `root.crt`, `intermediate.crt` and `intermediate.key`. Store `root.key` offline; it is only needed to issue a new intermediate.
+
 ## Trust model
 
 Run your own instance and never enroll devices in someone else's. Installing an instance's root certificate lets its operator impersonate any website to your devices, and the sink delivers JavaScript that runs inside the pages you visit. Only trust a root you generated yourself.
