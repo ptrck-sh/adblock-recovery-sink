@@ -16,7 +16,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w
+      - -s -w -X main.version={{ envOrDefault "CI_COMMIT_TAG" .Version }}
 
 archives:
   - id: sink

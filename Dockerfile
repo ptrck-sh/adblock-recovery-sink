@@ -4,3 +4,4 @@ ARG TARGETARCH
 COPY dist/sink_${TARGETOS}_${TARGETARCH}*/sink /sink
 USER nonroot:nonroot
 ENTRYPOINT ["/sink"]
+CMD ["serve"]

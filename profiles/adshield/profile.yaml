@@ -1,0 +1,11 @@
+version: 1
+name: adshield
+routes:
+  - hosts: [html-load.com]
+    path: /loader.min.js
+    methods: [GET, HEAD]
+    status: 200
+    content_type: "text/javascript; charset=utf-8"
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js

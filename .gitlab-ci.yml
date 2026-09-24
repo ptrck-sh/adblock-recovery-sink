@@ -32,6 +32,7 @@ include:
       needs: ['go:build']
     rules:
       - if: $CI_COMMIT_BRANCH
+      - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$/
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
     inputs:
       job_suffix: ":sha"
@@ -47,10 +48,17 @@ include:
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
     inputs:
       job_suffix: ":tag"
+      from_image_tag: $CI_COMMIT_REF_SLUG
+      to_image_tag: $CI_COMMIT_TAG
+    rules:
+      - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$/
+  - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/copy-image@0.23.0
+    inputs:
+      job_suffix: ":release"
       from_image_tag: $CI_COMMIT_SHORT_SHA
       to_image_tag: $CI_COMMIT_TAG
     rules:
-      - if: $CI_COMMIT_TAG
+      - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/
 
 go:build:
   stage: build
@@ -69,3 +77,4 @@ go:build:
     expire_in: 7 days
   rules:
     - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$/

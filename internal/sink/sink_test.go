@@ -1,0 +1,150 @@
+package sink
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"errors"
+	"io"
+	"math/big"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"syscall"
+	"testing"
+	"time"
+
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/metrics"
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/internal/profile"
+	"gitlab.com/ptrck-sh/adblock-recovery-sink/profiles"
+)
+
+func bundledRouter(t *testing.T) *profile.Router {
+	t.Helper()
+	items, err := profile.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	router, err := profile.NewRouter(items, []string{"adshield"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return router
+}
+
+func TestHandler(t *testing.T) {
+	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}), nil)
+	body, err := profiles.FS.ReadFile("adshield/loader.min.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name, host, method, path string
+		status                   int
+		body                     bool
+	}{
+		{"unknown host", "other.example", "GET", "/loader.min.js", 421, false},
+		{"unknown path", "html-load.com", "GET", "/other", 404, false},
+		{"method", "html-load.com", "POST", "/loader.min.js", 405, false},
+		{"head", "html-load.com:443", "HEAD", "/loader.min.js", 200, false},
+		{"options", "html-load.com", "OPTIONS", "/loader.min.js", 204, false},
+		{"body", "HTML-LOAD.COM.", "GET", "/loader.min.js", 200, true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(test.method, "https://example"+test.path, nil)
+			request.Host = test.host
+			handler.ServeHTTP(recorder, request)
+			if recorder.Code != test.status {
+				t.Fatalf("got %d", recorder.Code)
+			}
+			if recorder.Header().Get("Alt-Svc") != "" {
+				t.Fatal("Alt-Svc present")
+			}
+			if test.method == "OPTIONS" && recorder.Header().Get("Access-Control-Allow-Origin") != "*" {
+				t.Fatal("missing cors")
+			}
+			if test.method == "POST" && recorder.Header().Get("Allow") == "" {
+				t.Fatal("missing allow")
+			}
+			if test.body && string(recorder.Body.Bytes()) != string(body) {
+				t.Fatal("wrong bundled body")
+			}
+			if !test.body && recorder.Body.Len() != 0 {
+				t.Fatal("unexpected body")
+			}
+		})
+	}
+}
+
+type testCertSource struct{ certificate tls.Certificate }
+
+func (s testCertSource) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return &s.certificate, nil
+}
+
+func TestTLS(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "html-load.com"}, DNSNames: []string{"html-load.com"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := newServer(t, NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}), nil))
+	server.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, true, metrics.New([]string{"adshield"}))
+	server.StartTLS()
+	defer server.Close()
+	transport := &http.Transport{ForceAttemptHTTP2: true, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "html-load.com"}}
+	client := &http.Client{Transport: transport}
+	request, _ := http.NewRequest(http.MethodGet, server.URL+"/loader.min.js", nil)
+	request.Host = "html-load.com"
+	response, err := client.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.ProtoMajor != 2 {
+		t.Fatalf("protocol %s", response.Proto)
+	}
+	_, _ = io.ReadAll(response.Body)
+	badTransport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "other.example"}}
+	badClient := &http.Client{Transport: badTransport}
+	if _, err := badClient.Get(server.URL); err == nil {
+		t.Fatal("unknown sni succeeded")
+	}
+	server.Close()
+	plainServer := newServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	plainServer.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, false, metrics.New([]string{"adshield"}))
+	plainServer.StartTLS()
+	defer plainServer.Close()
+	plainClient := &http.Client{Transport: &http.Transport{ForceAttemptHTTP2: true, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "html-load.com"}}}
+	plainResponse, err := plainClient.Get(plainServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plainResponse.Body.Close()
+	if plainResponse.ProtoMajor != 1 {
+		t.Fatalf("protocol %s", plainResponse.Proto)
+	}
+}
+
+func newServer(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if errors.Is(err, syscall.EPERM) {
+		t.Skip("loopback listeners are unavailable")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewUnstartedServer(handler)
+	server.Listener = listener
+	return server
+}
