@@ -23,6 +23,7 @@ import (
 func main() {
 	hosts := flag.String("hosts", "html-load.com", "")
 	sinkAddr := flag.String("sink", "127.0.0.1:8443", "")
+	forward := flag.String("forward", "", "")
 	proxyAddr := flag.String("proxy", "127.0.0.1:3128", "")
 	caOut := flag.String("ca", "root.pem", "")
 	profile := flag.String("profile", "profiles/adshield/loader.min.js", "")
@@ -106,7 +107,11 @@ func main() {
 		http.NotFound(w, r)
 	})
 	sink := &http.Server{Addr: *sinkAddr, Handler: mux, TLSConfig: cfg, ReadHeaderTimeout: 5 * time.Second}
-	go func() { log.Fatal(sink.ListenAndServeTLS("", "")) }()
+	if *forward == "" {
+		go func() { log.Fatal(sink.ListenAndServeTLS("", "")) }()
+	} else {
+		*sinkAddr = *forward
+	}
 
 	proxy := &http.Server{Addr: *proxyAddr, ReadHeaderTimeout: 10 * time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodConnect {

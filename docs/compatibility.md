@@ -71,6 +71,8 @@ Chrome classifies by the resolved IP address only, so the sink avoids the prompt
 
 Decision: the default deployment tolerates the prompt, and the setup guide documents the one-time Allow per site and device. Operators who want no prompt can publish the sink on their own public address: rewrite `html-load.com` to a CNAME of their own hostname, point that hostname at their WAN address, and forward TCP 443 to the TLS-passthrough entrypoint. The record must be DNS-only; a TLS-terminating proxy such as Cloudflare's orange cloud cannot pass `html-load.com` through to the sink.
 
+Verified 2026-09-24: with the sink reached through the operator's public address, Chrome 153 on Android loaded all three sites through the sink with no Local Network Access permission granted and no prompt. Two network conditions apply. LAN clients connect to their own public address, so the router in front of the passthrough entrypoint must loop that traffic back (NAT loopback). A firewall that only admits a CDN's address ranges on port 443 must also admit the looped-back sources.
+
 ## Host set
 
 The profile only needs `html-load.com`. Fallback hosts are requested only after the primary loader fails, and their list rotates, so they are out of scope.
