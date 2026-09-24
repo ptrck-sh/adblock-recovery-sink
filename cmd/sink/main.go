@@ -62,6 +62,29 @@ func material(value, file string) ([]byte, error) {
 	return data, nil
 }
 
+func statusProvider(issuer *pki.Issuer, cfg config.Config) func() ops.Status {
+	return func() ops.Status {
+		pkiStatus := ops.PKIStatus{
+			Ready:                true,
+			RootFingerprint:      pki.Fingerprint(issuer.Root()),
+			RootNotAfter:         issuer.Root().NotAfter.Format(time.RFC3339),
+			IntermediateNotAfter: issuer.Intermediate().NotAfter.Format(time.RFC3339),
+			LeafCacheEntries:     issuer.CacheLen(),
+		}
+		if err := issuer.Ready(); err != nil {
+			pkiStatus.Ready = false
+			pkiStatus.Error = err.Error()
+		}
+		return ops.Status{
+			Version:  version,
+			Hostname: cfg.Hostname,
+			Profiles: append([]string(nil), cfg.Profiles...),
+			Hosts:    append([]string(nil), cfg.Hosts...),
+			PKI:      pkiStatus,
+		}
+	}
+}
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -136,7 +159,7 @@ func serve(args []string) error {
 		}
 		return issuer.Ready()
 	}
-	enrollment := enroll.Handler(issuer, cfg.Enrollment.Host)
+	enrollment := enroll.Handler(issuer, cfg.Hostname)
 	logger.Info("issuer loaded", "root_fingerprint", pki.Fingerprint(issuer.Root()), "expires", issuer.ExpiresAt())
 	routes, err := cfg.Routes()
 	if err != nil {
@@ -154,7 +177,7 @@ func serve(args []string) error {
 		return err
 	}
 	sinkServer := &http.Server{Handler: sinkHandler, TLSConfig: tlsConfig, MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
-	opsServer := &http.Server{Handler: ops.New(ready, enrollment, m.Registry()), MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
+	opsServer := &http.Server{Handler: ops.New(ready, statusProvider(issuer, cfg), enrollment, m.Registry()), MaxHeaderBytes: cfg.Limits.MaxHeaderBytes, ReadHeaderTimeout: cfg.Limits.ReadHeaderTimeout, IdleTimeout: cfg.Limits.IdleTimeout}
 	errCh := make(chan error, 2)
 	go func() { errCh <- sinkServer.Serve(tls.NewListener(sinkListener, tlsConfig)) }()
 	go func() { errCh <- opsServer.Serve(opsListener) }()

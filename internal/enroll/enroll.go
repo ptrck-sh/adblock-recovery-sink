@@ -11,12 +11,12 @@ import (
 )
 
 type pageData struct {
-	EnrollmentHost string
-	Hosts          []string
-	Fingerprint    string
+	Hostname    string
+	Hosts       []string
+	Fingerprint string
 }
 
-func Handler(issuer *pki.Issuer, enrollmentHost string) http.Handler {
+func Handler(issuer *pki.Issuer, hostname string) http.Handler {
 	if issuer == nil || issuer.Root() == nil || issuer.Intermediate() == nil {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -28,9 +28,9 @@ func Handler(issuer *pki.Issuer, enrollmentHost string) http.Handler {
 	intermediatePEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: intermediate.Raw})
 	chainPEM := append(append([]byte{}, intermediatePEM...), rootPEM...)
 	page, err := renderInstall(pageData{
-		EnrollmentHost: enrollmentHost,
-		Hosts:          intermediate.PermittedDNSDomains,
-		Fingerprint:    pki.Fingerprint(root),
+		Hostname:    hostname,
+		Hosts:       intermediate.PermittedDNSDomains,
+		Fingerprint: pki.Fingerprint(root),
 	})
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
@@ -114,13 +114,13 @@ li { margin: .45rem 0; }
 <main>
 <h1>Device enrollment</h1>
 <p>This page provides the private root certificate for this Adblock Recovery Sink. It enables selected site recovery on this device.</p>
-{{if .EnrollmentHost}}<p>Enrollment host: <code>{{.EnrollmentHost}}</code></p>{{end}}
+{{if .Hostname}}<p>Hostname: <code>{{.Hostname}}</code></p>{{end}}
 <p class="warning">Only install a root you generated yourself; it lets its operator impersonate the listed hosts.</p>
 <h2>Allowed hostnames</h2>
 <ul>{{range .Hosts}}<li><code>{{.}}</code></li>{{end}}</ul>
 <h2>Verify before installing</h2>
 <p>Root SHA-256 fingerprint: <code>{{.Fingerprint}}</code></p>
-<p><a href="/ca.crt">Download root certificate</a> · <a href="/ca.pem">Download PEM</a> · <a href="/ca-chain.pem">Download CA chain</a> · <a href="/fingerprint">Fingerprint text</a></p>
+<p><a href="/ca.crt">Download root certificate</a> · <a href="/ca.pem">Download PEM</a> · <a href="/ca-chain.pem">Download CA chain</a> · <a href="/fingerprint">Fingerprint text</a> · <a href="/status">Service status</a></p>
 <h2>Install and remove</h2>
 <ul>
 <li><strong>Android:</strong> download the root certificate, then install it from Security settings as a CA certificate. Remove it from Trusted credentials when no longer needed.</li>

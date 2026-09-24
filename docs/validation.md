@@ -16,7 +16,7 @@ Date: 2026-09-23. Covers milestones 2 to 5 of the [implementation plan](anti-ads
 | `pki init` | four `0600` files, optional Secret manifest without `root.key`, refuses to overwrite |
 | TLS passthrough | Traefik forwards SNI `html-load.com` untouched; the pod serves a 7-day leaf from the intermediate |
 | Unknown SNI, host or path | handshake rejected, 421, 404 |
-| Enrollment host | `/install`, `/ca.crt`, `/ca.pem`, `/ca-chain.pem` and `/fingerprint` served; `/healthz`, `/readyz` and `/metrics` return 404 externally |
+| Hostname | `/install`, `/ca.crt`, `/ca.pem`, `/ca-chain.pem`, `/fingerprint` and `/status` served; `/healthz`, `/readyz` and `/metrics` return 404 externally |
 | Restart, two replicas, upgrade | same root fingerprint throughout; each replica issues its own leaf |
 | Single-replica restart under load | 1939 of 1939 requests succeeded with the shutdown drain |
 | Pod security | no volumes or mounts, token not mounted, UID 65532, read-only root, all capabilities dropped, `RuntimeDefault` seccomp, PKI via `secretKeyRef` only |

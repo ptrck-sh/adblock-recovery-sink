@@ -62,3 +62,31 @@ func TestListsAndHostValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestHostname(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		env      []string
+		hostname string
+		wantErr  bool
+	}{
+		{"empty", nil, nil, "", false},
+		{"environment", nil, []string{"ARS_HOSTNAME=sink.example"}, "sink.example", false},
+		{"flag", []string{"--hostname", "sink.example"}, []string{"ARS_HOSTNAME=env.example"}, "sink.example", false},
+		{"uppercase", nil, []string{"ARS_HOSTNAME=Sink.Example"}, "", true},
+		{"trailing dot", nil, []string{"ARS_HOSTNAME=sink.example."}, "", true},
+		{"invalid character", nil, []string{"ARS_HOSTNAME=sink_example"}, "", true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg, err := Load(test.args, test.env)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("err=%v", err)
+			}
+			if !test.wantErr && cfg.Hostname != test.hostname {
+				t.Fatalf("hostname=%q", cfg.Hostname)
+			}
+		})
+	}
+}

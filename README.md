@@ -24,11 +24,13 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 | `hosts` | `ARS_HOSTS` | `--hosts` |
 | `profiles` | `ARS_PROFILES` | `--profiles` |
 | `profiles_dir` | `ARS_PROFILES_DIR` | `--profiles-dir` |
-| `enrollment.host` | `ARS_ENROLLMENT_HOST` | `--enrollment-host` |
+| `hostname` | `ARS_HOSTNAME` | `--hostname` |
 | `log.level`, `log.format` | `ARS_LOG_LEVEL`, `ARS_LOG_FORMAT` | |
 | `pki.root_cert`, `pki.intermediate_cert`, `pki.intermediate_key` | `ARS_PKI_ROOT_CERT`, `ARS_PKI_INTERMEDIATE_CERT`, `ARS_PKI_INTERMEDIATE_KEY` | |
 | `pki.root_cert_file`, `pki.intermediate_cert_file`, `pki.intermediate_key_file` | `ARS_PKI_ROOT_CERT_FILE`, `ARS_PKI_INTERMEDIATE_CERT_FILE`, `ARS_PKI_INTERMEDIATE_KEY_FILE` | |
 | `limits.max_header_bytes`, `limits.read_header_timeout`, `limits.idle_timeout`, `limits.shutdown_timeout`, `limits.shutdown_delay`, `limits.cert_cache_size` | matching `ARS_LIMITS_*` names | |
+
+`hostname` is the optional public hostname of this instance, displayed on the install page.
 
 ## Prior art
 

@@ -30,7 +30,7 @@ type Config struct {
 	Hosts       []string
 	Profiles    []string
 	ProfilesDir string
-	Enrollment  struct{ Host string }
+	Hostname    string
 	Log         struct {
 		Level  string
 		Format string
@@ -68,7 +68,7 @@ func Load(args []string, environ []string) (Config, error) {
 	flags.String("hosts", "", "")
 	flags.String("profiles", "adshield", "")
 	flags.String("profiles-dir", "", "")
-	flags.String("enrollment-host", "", "")
+	flags.String("hostname", "", "")
 	if err := flags.Parse(args); err != nil {
 		return Config{}, errors.New("invalid command line")
 	}
@@ -108,16 +108,16 @@ func defaults() map[string]interface{} {
 		"sink":  map[string]interface{}{"addr": ":8443", "http2": true},
 		"ops":   map[string]interface{}{"addr": "127.0.0.1:8080"},
 		"hosts": []string{}, "profiles": []string{"adshield"}, "profiles_dir": "",
-		"enrollment": map[string]interface{}{"host": ""},
-		"log":        map[string]interface{}{"level": "info", "format": "json"},
-		"pki":        map[string]interface{}{"root_cert": "", "intermediate_cert": "", "intermediate_key": "", "root_cert_file": "", "intermediate_cert_file": "", "intermediate_key_file": ""},
-		"limits":     map[string]interface{}{"max_header_bytes": 16384, "read_header_timeout": "5s", "idle_timeout": "60s", "shutdown_timeout": "10s", "shutdown_delay": "5s", "cert_cache_size": 256},
+		"hostname": "",
+		"log":      map[string]interface{}{"level": "info", "format": "json"},
+		"pki":      map[string]interface{}{"root_cert": "", "intermediate_cert": "", "intermediate_key": "", "root_cert_file": "", "intermediate_cert_file": "", "intermediate_key_file": ""},
+		"limits":   map[string]interface{}{"max_header_bytes": 16384, "read_header_timeout": "5s", "idle_timeout": "60s", "shutdown_timeout": "10s", "shutdown_delay": "5s", "cert_cache_size": 256},
 	}
 }
 
 func envTransform(key, value string) (string, any) {
 	keys := map[string]string{
-		"ARS_SINK_ADDR": "sink.addr", "ARS_SINK_HTTP2": "sink.http2", "ARS_OPS_ADDR": "ops.addr", "ARS_HOSTS": "hosts", "ARS_PROFILES": "profiles", "ARS_PROFILES_DIR": "profiles_dir", "ARS_ENROLLMENT_HOST": "enrollment.host", "ARS_LOG_LEVEL": "log.level", "ARS_LOG_FORMAT": "log.format", "ARS_PKI_ROOT_CERT": "pki.root_cert", "ARS_PKI_INTERMEDIATE_CERT": "pki.intermediate_cert", "ARS_PKI_INTERMEDIATE_KEY": "pki.intermediate_key", "ARS_PKI_ROOT_CERT_FILE": "pki.root_cert_file", "ARS_PKI_INTERMEDIATE_CERT_FILE": "pki.intermediate_cert_file", "ARS_PKI_INTERMEDIATE_KEY_FILE": "pki.intermediate_key_file", "ARS_LIMITS_MAX_HEADER_BYTES": "limits.max_header_bytes", "ARS_LIMITS_READ_HEADER_TIMEOUT": "limits.read_header_timeout", "ARS_LIMITS_IDLE_TIMEOUT": "limits.idle_timeout", "ARS_LIMITS_SHUTDOWN_TIMEOUT": "limits.shutdown_timeout", "ARS_LIMITS_SHUTDOWN_DELAY": "limits.shutdown_delay", "ARS_LIMITS_CERT_CACHE_SIZE": "limits.cert_cache_size",
+		"ARS_SINK_ADDR": "sink.addr", "ARS_SINK_HTTP2": "sink.http2", "ARS_OPS_ADDR": "ops.addr", "ARS_HOSTS": "hosts", "ARS_PROFILES": "profiles", "ARS_PROFILES_DIR": "profiles_dir", "ARS_HOSTNAME": "hostname", "ARS_LOG_LEVEL": "log.level", "ARS_LOG_FORMAT": "log.format", "ARS_PKI_ROOT_CERT": "pki.root_cert", "ARS_PKI_INTERMEDIATE_CERT": "pki.intermediate_cert", "ARS_PKI_INTERMEDIATE_KEY": "pki.intermediate_key", "ARS_PKI_ROOT_CERT_FILE": "pki.root_cert_file", "ARS_PKI_INTERMEDIATE_CERT_FILE": "pki.intermediate_cert_file", "ARS_PKI_INTERMEDIATE_KEY_FILE": "pki.intermediate_key_file", "ARS_LIMITS_MAX_HEADER_BYTES": "limits.max_header_bytes", "ARS_LIMITS_READ_HEADER_TIMEOUT": "limits.read_header_timeout", "ARS_LIMITS_IDLE_TIMEOUT": "limits.idle_timeout", "ARS_LIMITS_SHUTDOWN_TIMEOUT": "limits.shutdown_timeout", "ARS_LIMITS_SHUTDOWN_DELAY": "limits.shutdown_delay", "ARS_LIMITS_CERT_CACHE_SIZE": "limits.cert_cache_size",
 	}
 	result := keys[key]
 	if result == "" {
@@ -130,7 +130,7 @@ func envTransform(key, value string) (string, any) {
 }
 
 func flagTransform(flag *pflag.Flag) (string, interface{}) {
-	keys := map[string]string{"sink-addr": "sink.addr", "sink-http2": "sink.http2", "ops-addr": "ops.addr", "hosts": "hosts", "profiles": "profiles", "profiles-dir": "profiles_dir", "enrollment-host": "enrollment.host"}
+	keys := map[string]string{"sink-addr": "sink.addr", "sink-http2": "sink.http2", "ops-addr": "ops.addr", "hosts": "hosts", "profiles": "profiles", "profiles-dir": "profiles_dir", "hostname": "hostname"}
 	key := keys[flag.Name]
 	if key == "" {
 		return "", nil
@@ -149,7 +149,7 @@ func fromKoanf(ko *koanf.Koanf) Config {
 	var cfg Config
 	cfg.Sink.Addr, cfg.Sink.HTTP2 = ko.String("sink.addr"), ko.Bool("sink.http2")
 	cfg.Ops.Addr, cfg.Hosts, cfg.Profiles, cfg.ProfilesDir = ko.String("ops.addr"), ko.Strings("hosts"), ko.Strings("profiles"), ko.String("profiles_dir")
-	cfg.Enrollment.Host = ko.String("enrollment.host")
+	cfg.Hostname = ko.String("hostname")
 	cfg.Log.Level, cfg.Log.Format = ko.String("log.level"), ko.String("log.format")
 	cfg.PKI.RootCert, cfg.PKI.IntermediateCert, cfg.PKI.IntermediateKey = ko.String("pki.root_cert"), ko.String("pki.intermediate_cert"), ko.String("pki.intermediate_key")
 	cfg.PKI.RootCertFile, cfg.PKI.IntermediateCertFile, cfg.PKI.IntermediateKeyFile = ko.String("pki.root_cert_file"), ko.String("pki.intermediate_cert_file"), ko.String("pki.intermediate_key_file")
@@ -170,6 +170,9 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.Log.Format != "json" && cfg.Log.Format != "text" {
 		return errors.New("invalid log format")
+	}
+	if err := validHostname(cfg.Hostname); err != nil {
+		return err
 	}
 	if len(cfg.Profiles) == 0 {
 		return errors.New("no enabled profiles")
@@ -241,7 +244,7 @@ func RedactedYAML(cfg Config) ([]byte, error) {
 		return "<set>"
 	}
 	return yaml.Parser().Marshal(map[string]interface{}{
-		"sink": map[string]interface{}{"addr": cfg.Sink.Addr, "http2": cfg.Sink.HTTP2}, "ops": map[string]interface{}{"addr": cfg.Ops.Addr}, "hosts": cfg.Hosts, "profiles": cfg.Profiles, "profiles_dir": cfg.ProfilesDir, "enrollment": map[string]interface{}{"host": cfg.Enrollment.Host}, "log": map[string]interface{}{"level": cfg.Log.Level, "format": cfg.Log.Format},
+		"sink": map[string]interface{}{"addr": cfg.Sink.Addr, "http2": cfg.Sink.HTTP2}, "ops": map[string]interface{}{"addr": cfg.Ops.Addr}, "hosts": cfg.Hosts, "profiles": cfg.Profiles, "profiles_dir": cfg.ProfilesDir, "hostname": cfg.Hostname, "log": map[string]interface{}{"level": cfg.Log.Level, "format": cfg.Log.Format},
 		"pki":    map[string]interface{}{"root_cert": secret(cfg.PKI.RootCert), "intermediate_cert": secret(cfg.PKI.IntermediateCert), "intermediate_key": secret(cfg.PKI.IntermediateKey), "root_cert_file": secret(cfg.PKI.RootCertFile), "intermediate_cert_file": secret(cfg.PKI.IntermediateCertFile), "intermediate_key_file": secret(cfg.PKI.IntermediateKeyFile)},
 		"limits": map[string]interface{}{"max_header_bytes": cfg.Limits.MaxHeaderBytes, "read_header_timeout": cfg.Limits.ReadHeaderTimeout.String(), "idle_timeout": cfg.Limits.IdleTimeout.String(), "shutdown_timeout": cfg.Limits.ShutdownTimeout.String(), "shutdown_delay": cfg.Limits.ShutdownDelay.String(), "cert_cache_size": cfg.Limits.CertCacheSize},
 	})
@@ -269,3 +272,27 @@ func envValue(environ []string, key string) string {
 	return ""
 }
 func validAddr(value string) error { _, _, err := net.SplitHostPort(value); return err }
+
+func validHostname(value string) error {
+	if value == "" {
+		return nil
+	}
+	if len(value) > 253 {
+		return errors.New("hostname must be an exact lowercase DNS hostname")
+	}
+	for _, label := range strings.Split(value, ".") {
+		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return errors.New("hostname must be an exact lowercase DNS hostname")
+		}
+		for _, character := range label {
+			if character < 'a' || character > 'z' {
+				if character < '0' || character > '9' {
+					if character != '-' {
+						return errors.New("hostname must be an exact lowercase DNS hostname")
+					}
+				}
+			}
+		}
+	}
+	return nil
+}

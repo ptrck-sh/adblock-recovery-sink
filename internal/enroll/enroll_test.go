@@ -74,6 +74,9 @@ func TestHandler(t *testing.T) {
 	if strings.Contains(strings.ToLower(install.Body.String()), "http") {
 		t.Fatal("install page has an external URL")
 	}
+	if !strings.Contains(install.Body.String(), "enroll.example") || !strings.Contains(install.Body.String(), `href="/status"`) {
+		t.Fatal("install page is missing hostname or status link")
+	}
 	missing := httptest.NewRecorder()
 	handler.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, "/missing", nil))
 	if missing.Code != http.StatusNotFound {
