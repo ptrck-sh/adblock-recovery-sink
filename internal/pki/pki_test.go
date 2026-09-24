@@ -110,6 +110,32 @@ func TestFilterHosts(t *testing.T) {
 	}
 }
 
+func TestIssuerWildcardHosts(t *testing.T) {
+	now := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
+	directory, _ := initFiles(t, []string{"allowed.example"}, now)
+	root, intermediate, key := readIssuerFiles(t, directory)
+	allowed, skipped, err := pki.FilterHosts(root, intermediate, []string{"*.allowed.example", "*.outside.example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(allowed) != 1 || allowed[0] != "*.allowed.example" || len(skipped) != 1 || skipped[0] != "*.outside.example" {
+		t.Fatalf("allowed=%v skipped=%v", allowed, skipped)
+	}
+	if _, err := pki.Load(root, intermediate, key, pki.IssuerOptions{Hosts: []string{"*.outside.example"}, Now: func() time.Time { return now }}); err == nil {
+		t.Fatal("accepted wildcard outside name constraints")
+	}
+	issuer, err := pki.Load(root, intermediate, key, pki.IssuerOptions{Hosts: []string{"*.allowed.example"}, Now: func() time.Time { return now }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifyLeaf(t, get(t, issuer, "7.s.allowed.example"), issuer.Root(), "7.s.allowed.example", now)
+	for _, host := range []string{"allowed.example", "evilallowed.example", "other.example"} {
+		if _, err := issuer.GetCertificate(&tls.ClientHelloInfo{ServerName: host}); err == nil {
+			t.Fatalf("accepted %s", host)
+		}
+	}
+}
+
 func TestIssuerCertificatesCacheRenewalAndReadiness(t *testing.T) {
 	now := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
 	directory, _ := initFiles(t, []string{"a.example", "b.example", "c.example"}, now)
