@@ -102,3 +102,16 @@ h1 {
 .prose ul {
   padding-left: 1.25rem;
 }
+
+.prose pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
