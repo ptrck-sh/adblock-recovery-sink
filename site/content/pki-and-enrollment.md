@@ -11,7 +11,7 @@ Both CA certificates have critical DNS name constraints for the supplied hosts. 
 Initialize a CA for the bundled hosts with registrable domains so the constraints also cover their subdomains:
 
 ```sh
-sink pki init --hosts html-load.com,content-loader.com,js-loader.com,css-load.com,d37j8pfxu2iogi.cloudfront.net --out ./pki
+sink pki init --hosts html-load.com,content-loader.com,js-loader.com,css-load.com,d37j8pfxu2iogi.cloudfront.net,dkyerkk91s4fa.cloudfront.net --out ./pki
 ```
 
 Existing CAs constrained to `html-load.com` keep working, but cover only that domain and its subdomains. Re-enroll with a new CA to cover the other loader hosts.

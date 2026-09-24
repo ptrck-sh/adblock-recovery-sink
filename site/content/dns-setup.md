@@ -4,7 +4,7 @@ description = "Rewrite the supported host to the sink and roll back safely."
 weight = 7
 +++
 
-Create resolver rewrites for `html-load.com`, `fb.html-load.com`, `1.s.html-load.com`, `3.s.html-load.com`, `8.s.html-load.com`, `content-loader.com`, `fb.content-loader.com`, `1.content-loader.com`, `2.content-loader.com`, `js-loader.com`, `css-load.com`, and `d37j8pfxu2iogi.cloudfront.net` after the sink is reachable and devices trust its root CA.
+Create resolver rewrites for `html-load.com`, `fb.html-load.com`, `1.s.html-load.com`, `3.s.html-load.com`, `8.s.html-load.com`, `content-loader.com`, `fb.content-loader.com`, `1.content-loader.com`, `2.content-loader.com`, `js-loader.com`, `css-load.com`, `d37j8pfxu2iogi.cloudfront.net`, and `dkyerkk91s4fa.cloudfront.net` after the sink is reachable and devices trust its root CA.
 
 In AdGuard Home, add a DNS rewrite for each host to the sink's IPv4 or IPv6 address. In NextDNS, add a rewrite for each host to the sink address or to a CNAME such as `sink.example.com`.
 

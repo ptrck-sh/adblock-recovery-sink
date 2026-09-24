@@ -81,7 +81,11 @@ Verified 2026-09-24: with the sink reached through the operator's public address
 
 ## Host set
 
-The profile only needs `html-load.com`. Fallback hosts are requested only after the primary loader fails, and their list rotates, so they are out of scope.
+On the Raptive sites the primary `html-load.com/loader.min.js` is enough: fallback hosts are requested only after it fails.
+
+Other integrations name the loader differently. `tomshardware.com` (2026-09-24) runs the same light SDK (`data-sdk="l/1.2.10"`) but starts at `html-load.com/app.js` and then tries `fb.html-load.com/vendor.js`, `dkyerkk91s4fa.cloudfront.net/main.js`, `content-loader.com/app.js` and `fb.content-loader.com/vendor.js`. Success is the same `*_as_req`/`*_as_res` handshake. Serving the unchanged stub on those paths kept the page intact in Chromium and Firefox: no dialogs, no `error-report.com` request, all stylesheets present.
+
+A host that answers `404` still advances the fallback chain, so the bundled profile serves the stub on `/loader.min.js`, `/app.js`, `/vendor.js` and `/main.js` for every known host, including the numbered subdomains, `js-loader.com` and `css-load.com` from [Jacob Desforges' research](https://jacobdesforges.com/adshield-ad-reinsertion/).
 
 ## Browser restrictions
 
@@ -100,7 +104,7 @@ On the test LAN, `ads.adthrive.com` and `content-loader.com` resolve to `0.0.0.0
 - iOS/iPadOS and Safari.
 - Headed desktop Chrome.
 - Firefox for Android.
-- `essential` mode and other Ad-Shield integrations outside Raptive.
+- `essential` mode.
 
 ## Reproduce
 
@@ -113,7 +117,7 @@ test/smoke/run.sh firefox https://pinchofyum.com/6-ingredient-espresso-brownies 
 test/smoke/run.sh chromium https://pinchofyum.com/6-ingredient-espresso-brownies control notrust
 ```
 
-The fixture page sets its title to `ok` when the handshake succeeds. Live-site runs print loader hosts, dialog count, navigations and the final stylesheet count. These are manual smoke tests, not CI jobs.
+The fixture page sets its title to `ok` when the handshake succeeds. Live-site runs print loader hosts, dialog count, navigations and the final stylesheet count. These are manual smoke tests. The CI job `e2e:browser` runs `test/e2e/run.sh`, which starts the real `sink` binary with the toast enabled and checks the handshake and toast in Chromium for five loader URLs.
 
 ## Prior art
 
