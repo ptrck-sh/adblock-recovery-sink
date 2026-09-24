@@ -18,6 +18,8 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 | `hostname` | empty | `ARS_HOSTNAME` | `--hostname` |
 | `log.level` | `info` | `ARS_LOG_LEVEL` | |
 | `log.format` | `json` | `ARS_LOG_FORMAT` | |
+| `toast.enabled` | `false` | `ARS_TOAST_ENABLED` | |
+| `toast.details` | `false` | `ARS_TOAST_DETAILS` | |
 | `pki.root_cert` | empty | `ARS_PKI_ROOT_CERT` | |
 | `pki.intermediate_cert` | empty | `ARS_PKI_INTERMEDIATE_CERT` | |
 | `pki.intermediate_key` | empty | `ARS_PKI_INTERMEDIATE_KEY` | |
@@ -25,7 +27,9 @@ Configuration is loaded in this order: built-in defaults, YAML from `--config` o
 | `pki.intermediate_cert_file` | empty | `ARS_PKI_INTERMEDIATE_CERT_FILE` | |
 | `pki.intermediate_key_file` | empty | `ARS_PKI_INTERMEDIATE_KEY_FILE` | |
 
-`hosts` and `profiles` are comma-separated in environment variables and flags. When `hosts` is unset, the service derives it from enabled profiles. Every configured host must be provided by an enabled profile. `hostname` is an optional public name shown on `/install`.
+`hosts` and `profiles` are comma-separated in environment variables and flags. When `hosts` is unset, the service derives it from enabled profiles. An entry may start with `*.` to match every subdomain of a domain at any depth, but not the domain itself. Every configured host must be provided by an enabled profile. Hosts outside the root and intermediate CA name constraints are skipped with a warning and listed as `skipped_hosts` on `/status`, so an older CA keeps working with a longer host list. The service fails if no host remains. `hostname` is an optional public name shown on `/install`.
+
+When `toast.enabled` is true, JavaScript responses show a brief local confirmation after the first loader handshake. Set `toast.details` to include the script host and path.
 
 ## Limits
 

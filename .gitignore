@@ -30,3 +30,4 @@ dist/
 public/
 
 test/smoke/.work/
+test/e2e/.work/

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -88,5 +89,38 @@ func TestHostname(t *testing.T) {
 				t.Fatalf("hostname=%q", cfg.Hostname)
 			}
 		})
+	}
+}
+
+func TestToast(t *testing.T) {
+	defaultConfig, err := Load(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defaultConfig.Toast.Enabled || defaultConfig.Toast.Details {
+		t.Fatalf("toast=%+v", defaultConfig.Toast)
+	}
+	defaultRouter, err := defaultConfig.Routes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defaultRoute, _ := defaultRouter.Match("html-load.com", "GET", "/loader.min.js")
+	if strings.Contains(string(defaultRoute.Body), "Adblock recovery neutralized") {
+		t.Fatal("default route contains toast")
+	}
+	cfg, err := Load(nil, []string{"ARS_TOAST_ENABLED=true", "ARS_TOAST_DETAILS=true"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Toast.Enabled || !cfg.Toast.Details {
+		t.Fatalf("toast=%+v", cfg.Toast)
+	}
+	router, err := cfg.Routes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	route, result := router.Match("html-load.com", "GET", "/loader.min.js")
+	if string(result) != "matched" || !strings.Contains(string(route.Body), `({"details":true});`) {
+		t.Fatalf("route=%+v result=%s", route, result)
 	}
 }

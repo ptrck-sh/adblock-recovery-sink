@@ -30,10 +30,11 @@ func TestStatus(t *testing.T) {
 	secret := "private-key-value"
 	handler := New(func() error { return errors.New("draining") }, func() Status {
 		return Status{
-			Version:  "v1.2.3",
-			Hostname: "sink.example",
-			Profiles: []string{"adshield"},
-			Hosts:    []string{"html-load.com"},
+			Version:      "v1.2.3",
+			Hostname:     "sink.example",
+			Profiles:     []string{"adshield"},
+			Hosts:        []string{"html-load.com"},
+			SkippedHosts: []string{"content-loader.com"},
 			PKI: PKIStatus{
 				Ready:                true,
 				RootFingerprint:      "AA:BB",
@@ -58,7 +59,7 @@ func TestStatus(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &status); err != nil {
 		t.Fatal(err)
 	}
-	if status.Status != "degraded" || status.Version != "v1.2.3" || status.Hostname != "sink.example" || len(status.Profiles) != 1 || status.Profiles[0] != "adshield" || len(status.Hosts) != 1 || status.Hosts[0] != "html-load.com" {
+	if status.Status != "degraded" || status.Version != "v1.2.3" || status.Hostname != "sink.example" || len(status.Profiles) != 1 || status.Profiles[0] != "adshield" || len(status.Hosts) != 1 || status.Hosts[0] != "html-load.com" || len(status.SkippedHosts) != 1 || status.SkippedHosts[0] != "content-loader.com" {
 		t.Fatalf("status=%+v", status)
 	}
 	if !status.PKI.Ready || status.PKI.RootFingerprint != "AA:BB" || status.PKI.RootNotAfter != "2030-01-02T03:04:05Z" || status.PKI.IntermediateNotAfter != "2029-01-02T03:04:05Z" || status.PKI.LeafCacheEntries != 2 {

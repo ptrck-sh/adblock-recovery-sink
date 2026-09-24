@@ -9,12 +9,13 @@ import (
 )
 
 type Status struct {
-	Status   string    `json:"status"`
-	Version  string    `json:"version"`
-	Hostname string    `json:"hostname"`
-	Profiles []string  `json:"profiles"`
-	Hosts    []string  `json:"hosts"`
-	PKI      PKIStatus `json:"pki"`
+	Status       string    `json:"status"`
+	Version      string    `json:"version"`
+	Hostname     string    `json:"hostname"`
+	Profiles     []string  `json:"profiles"`
+	Hosts        []string  `json:"hosts"`
+	SkippedHosts []string  `json:"skipped_hosts"`
+	PKI          PKIStatus `json:"pki"`
 }
 
 type PKIStatus struct {

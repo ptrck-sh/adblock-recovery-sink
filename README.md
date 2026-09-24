@@ -8,7 +8,7 @@ Documentation: <https://ptrck-sh.gitlab.io/adblock-recovery-sink>
 
 ## Status
 
-Version 0.1.1. The substitution approach is proven in the [compatibility report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/compatibility/) and the service, PKI and chart are validated in the [validation report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/validation/).
+Version 0.2.0. The substitution approach is proven in the [compatibility report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/compatibility/) and the service, PKI and chart are validated in the [validation report](https://ptrck-sh.gitlab.io/adblock-recovery-sink/validation/).
 
 ## Generate the CA
 
@@ -17,7 +17,7 @@ Run `pki init` once, offline. It writes `root.crt`, `root.key`, `intermediate.cr
 With the release binary:
 
 ```sh
-sink pki init --hosts html-load.com --out ./ars-pki
+sink pki init --hosts html-load.com,content-loader.com,js-loader.com,css-load.com,d37j8pfxu2iogi.cloudfront.net,dkyerkk91s4fa.cloudfront.net --out ./ars-pki
 ```
 
 With the published image:
@@ -26,8 +26,8 @@ With the published image:
 mkdir -p ars-pki
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   -v "$PWD/ars-pki:/out" \
-  quay.io/ptrck-sh/adblock-recovery-sink:0.1.1 \
-  pki init --hosts html-load.com --out /out
+  quay.io/ptrck-sh/adblock-recovery-sink:0.2.0 \
+  pki init --hosts html-load.com,content-loader.com,js-loader.com,css-load.com,d37j8pfxu2iogi.cloudfront.net,dkyerkk91s4fa.cloudfront.net --out /out
 ```
 
 With Podman, use the same command and add `:Z` to the volume on SELinux hosts.
