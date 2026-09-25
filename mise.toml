@@ -2,7 +2,7 @@
 
 [tools]
 go = "1.23"
-pre-commit = "4.6.0"
+pre-commit = "4.6.2"
 glab = "1.100.0"
 
 [tasks.build]
