@@ -55,32 +55,34 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	request.Body.Close()
 	host := requestHost(request.Host)
 	if !allowedHost(h.hosts, host) {
-		h.respond(writer, "unknown", profile.UnknownHost, http.StatusMisdirectedRequest)
+		h.respond(writer, request, host, "unknown", profile.UnknownHost, http.StatusMisdirectedRequest)
 		return
 	}
 	route, result := h.router.Match(host, request.Method, request.URL.Path)
 	if request.Method == http.MethodOptions && result == profile.MethodNotAllowed && route != nil && route.CORSOrigin != "" {
 		h.setRouteHeaders(writer, route)
 		writer.Header().Set("Allow", allow(route))
-		h.respond(writer, route.Profile, profile.Matched, http.StatusNoContent)
+		h.respond(writer, request, host, route.Profile, profile.Matched, http.StatusNoContent)
 		return
 	}
 	switch result {
 	case profile.UnknownPath:
-		h.respond(writer, "unknown", result, http.StatusNotFound)
+		h.respond(writer, request, host, "unknown", result, http.StatusNotFound)
 	case profile.MethodNotAllowed:
 		writer.Header().Set("Allow", allow(route))
-		h.respond(writer, route.Profile, result, http.StatusMethodNotAllowed)
+		h.respond(writer, request, host, route.Profile, result, http.StatusMethodNotAllowed)
 	case profile.Matched:
 		h.setRouteHeaders(writer, route)
 		h.metrics.Request(route.Profile, string(result))
+		h.metrics.SiteRequest(request.Referer(), string(result))
+		h.metrics.UpstreamRequest(host, request.URL.Path, string(result))
 		writer.WriteHeader(route.Status)
 		if request.Method != http.MethodHead {
 			_, _ = writer.Write(route.Body)
 		}
 		h.log(route.Profile, result, route.Status)
 	default:
-		h.respond(writer, "unknown", profile.UnknownHost, http.StatusMisdirectedRequest)
+		h.respond(writer, request, host, "unknown", profile.UnknownHost, http.StatusMisdirectedRequest)
 	}
 }
 
@@ -96,8 +98,10 @@ func (h *handler) setRouteHeaders(writer http.ResponseWriter, route *profile.Rou
 	}
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 }
-func (h *handler) respond(writer http.ResponseWriter, name string, result profile.Result, status int) {
+func (h *handler) respond(writer http.ResponseWriter, request *http.Request, host, name string, result profile.Result, status int) {
 	h.metrics.Request(name, string(result))
+	h.metrics.SiteRequest(request.Referer(), string(result))
+	h.metrics.UpstreamRequest(host, request.URL.Path, string(result))
 	writer.WriteHeader(status)
 	h.log(name, result, status)
 }
