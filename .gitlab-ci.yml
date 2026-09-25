@@ -24,7 +24,7 @@ include:
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/alint-fix@0.23.0
   - component: $CI_SERVER_FQDN/ptrck-sh/templates/ci-templates/go@0.23.0
     inputs:
-      go_image: golang:1.23
+      go_image: golang:1.27.1
       publish_tags: false
     rules:
       - if: $CI_COMMIT_BRANCH
