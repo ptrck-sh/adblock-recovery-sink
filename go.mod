@@ -8,13 +8,13 @@ require (
 	github.com/knadh/koanf/providers/env/v2 v2.0.1
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/providers/posflag v1.0.2
-	github.com/knadh/koanf/v2 v2.3.6
+	github.com/knadh/koanf/v2 v2.3.7
 	github.com/prometheus/client_golang v1.20.5
 	github.com/spf13/pflag v1.0.10
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )
 
-require github.com/prometheus/client_model v0.6.1
+require github.com/prometheus/client_model v0.6.3
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
