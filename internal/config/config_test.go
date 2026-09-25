@@ -124,3 +124,25 @@ func TestToast(t *testing.T) {
 		t.Fatalf("route=%+v result=%s", route, result)
 	}
 }
+
+func TestMetrics(t *testing.T) {
+	defaults, err := Load(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defaults.Metrics.Sites.Enabled || defaults.Metrics.Sites.Max != 100 || defaults.Metrics.Upstreams.Max != 200 {
+		t.Fatalf("metrics=%+v", defaults.Metrics)
+	}
+	cfg, err := Load(nil, []string{"ARS_METRICS_SITES_ENABLED=true", "ARS_METRICS_SITES_MAX=10", "ARS_METRICS_UPSTREAMS_MAX=20"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Metrics.Sites.Enabled || cfg.Metrics.Sites.Max != 10 || cfg.Metrics.Upstreams.Max != 20 {
+		t.Fatalf("metrics=%+v", cfg.Metrics)
+	}
+	for _, environment := range [][]string{{"ARS_METRICS_SITES_MAX=0"}, {"ARS_METRICS_UPSTREAMS_MAX=0"}} {
+		if _, err := Load(nil, environment); err == nil {
+			t.Fatal("expected metrics validation error")
+		}
+	}
+}
