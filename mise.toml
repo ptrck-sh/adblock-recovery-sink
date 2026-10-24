@@ -1,7 +1,7 @@
 [env]
 
 [tools]
-go = "1.27.1"
+go = "1.27.3"
 pre-commit = "4.6.2"
 glab = "1.100.0"
 
