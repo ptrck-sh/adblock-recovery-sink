@@ -1,7 +1,7 @@
 +++
 title = "Validation"
 description = "Validation evidence for the service, PKI, and chart."
-weight = 12
+weight = 13
 +++
 
 # Validation: service, PKI and chart
