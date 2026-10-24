@@ -1,7 +1,7 @@
 +++
 title = "Contributing"
 description = "Development, profiles, commit messages, and security reporting."
-weight = 13
+weight = 14
 +++
 
 Install the project tool versions with `mise`, then run the Go test suite:

@@ -1,7 +1,7 @@
 +++
 title = "Why a Go service"
 description = "Why this is a small Go program and not an nginx configuration."
-weight = 15
+weight = 16
 +++
 
 The response itself is trivial: a few hundred bytes of JavaScript over HTTPS. Any web server can return that, and nginx, Caddy or HAProxy with a static file would work for a single host with a certificate you manage by hand. The work is everything around that response, and in a web server config each part needs its own tool, script or module.
