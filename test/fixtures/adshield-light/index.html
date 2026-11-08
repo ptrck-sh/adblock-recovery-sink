@@ -9,10 +9,18 @@
 (() => {
   const nonce = String(Math.random());
   let answered = false;
+  let answeredV1 = false;
   addEventListener("message", (event) => {
     if (event.data === nonce + "_as_res") answered = true;
   });
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const requestV1 = () => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = (event) => {
+      if (event.data && event.data.type === "as_res_v1" && event.data.key === nonce) answeredV1 = true;
+    };
+    postMessage({ type: "as_req_v1", key: nonce }, "*", [channel.port2]);
+  };
   const loader = document.createElement("script");
   loader.src = new URLSearchParams(location.search).get("src") || "https://html-load.com/loader.min.js";
   loader.onerror = () => { document.title = "fail: load"; };
@@ -20,13 +28,14 @@
     for (const delay of [0, 100, 500, 1000]) {
       await wait(delay);
       postMessage(nonce + "_as_req", "*");
+      requestV1();
       await wait(50);
-      if (answered) {
+      if (answered && answeredV1) {
         document.title = "ok";
         return;
       }
     }
-    document.title = "fail: handshake";
+    document.title = "fail: handshake " + JSON.stringify({ answered, answeredV1 });
   };
   document.head.appendChild(loader);
 })();
