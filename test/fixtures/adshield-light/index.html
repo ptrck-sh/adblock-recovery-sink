@@ -7,6 +7,8 @@
 <body>
 <script>
 (() => {
+  const params = new URLSearchParams(location.search);
+  const handshake = params.get("handshake") || "both";
   const nonce = String(Math.random());
   let answered = false;
   let answeredV1 = false;
@@ -22,15 +24,15 @@
     postMessage({ type: "as_req_v1", key: nonce }, "*", [channel.port2]);
   };
   const loader = document.createElement("script");
-  loader.src = new URLSearchParams(location.search).get("src") || "https://html-load.com/loader.min.js";
+  loader.src = params.get("src") || "https://html-load.com/loader.min.js";
   loader.onerror = () => { document.title = "fail: load"; };
   loader.onload = async () => {
     for (const delay of [0, 100, 500, 1000]) {
       await wait(delay);
-      postMessage(nonce + "_as_req", "*");
-      requestV1();
+      if (handshake !== "v1") postMessage(nonce + "_as_req", "*");
+      if (handshake !== "legacy") requestV1();
       await wait(50);
-      if (answered && answeredV1) {
+      if ((handshake === "v1" || answered) && (handshake === "legacy" || answeredV1)) {
         document.title = "ok";
         return;
       }

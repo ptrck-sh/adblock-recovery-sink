@@ -59,4 +59,7 @@ status=0
 for url in "${urls[@]}"; do
 	uv run -q --with playwright python "$here/check.py" "$repo/test/fixtures/adshield-light/index.html" "$profile" "$rules" "$url" toast || status=1
 done
+for handshake in legacy v1; do
+	uv run -q --with playwright python "$here/check.py" "$repo/test/fixtures/adshield-light/index.html" "$profile" "$rules" https://html-load.com/bundle.js toast "$handshake" || status=1
+done
 exit "$status"

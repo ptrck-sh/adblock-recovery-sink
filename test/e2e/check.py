@@ -10,7 +10,8 @@ TOAST_JS = """() => [...document.body.children].some(e => e.style.zIndex === "21
 
 def main():
     fixture, profile, rules, src, toast = sys.argv[1:6]
-    url = Path(fixture).resolve().as_uri() + "?src=" + src
+    handshake = sys.argv[6] if len(sys.argv) > 6 else "both"
+    url = Path(fixture).resolve().as_uri() + "?src=" + src + "&handshake=" + handshake
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
             profile,
@@ -22,7 +23,7 @@ def main():
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         page.goto(url)
         page.wait_for_function("() => document.title !== 'pending'", timeout=15000)
-        result = {"src": src, "title": page.title(), "toast": None}
+        result = {"src": src, "handshake": handshake, "title": page.title(), "toast": None}
         if toast == "toast":
             try:
                 page.wait_for_function(TOAST_JS, timeout=5000)
