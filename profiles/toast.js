@@ -55,7 +55,8 @@
     };
     addEventListener("message", (event) => {
       try {
-        if (!shown && event.source === window && typeof event.data === "string" && event.data.endsWith("_as_req")) {
+        const data = event.data;
+        if (!shown && event.source === window && ((typeof data === "string" && data.endsWith("_as_req")) || (data && data.type === "as_req_v1"))) {
           shown = true;
           show();
         }
