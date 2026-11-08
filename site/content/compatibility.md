@@ -22,6 +22,7 @@ Chrome on desktop and Android asks for Local Network Access on each affected sit
 | `eatatmaudes.com/the-ultimate-brownie-loaf-with-espresso-brown-butter-frosting/` | Raptive, recovery script injected later by the ad stack |
 | `hot-thai-kitchen.com/red-curry-chicken-squash/` | Raptive, behind a Cloudflare bot check |
 | `feastingathome.com/zaatar-spice-recipe/` | WordPress plugin (`data-sdk="wp-l/1.1.11"`), loader at `html-load.com/bundle.js` |
+| `101cookbooks.com/zaatar-recipe/` | Raptive with the same WordPress plugin (`wp-l/1.1.11`), loader at `html-load.com/bundle.js` |
 
 ## Observed loader contract
 
@@ -86,7 +87,7 @@ On the Raptive sites the primary `html-load.com/loader.min.js` is enough: fallba
 
 Other integrations name the loader differently. `tomshardware.com` (2026-09-24) runs the same light SDK (`data-sdk="l/1.2.10"`) but starts at `html-load.com/app.js` and then tries `fb.html-load.com/vendor.js`, `dkyerkk91s4fa.cloudfront.net/main.js`, `content-loader.com/app.js` and `fb.content-loader.com/vendor.js`. Success is the same `*_as_req`/`*_as_res` handshake. Serving the unchanged stub on those paths kept the page intact in Chromium and Firefox: no dialogs, no `error-report.com` request, all stylesheets present.
 
-The WordPress plugin on `feastingathome.com` (2026-11-08, `data-sdk="wp-l/1.1.11"`) starts at `html-load.com/bundle.js`, then tries `fb.html-load.com/api.js`, `rule.evenyippee.com/cdn.js`, `content-loader.com/bundle.js` and `fb.content-loader.com/api.js`. Its `onload` uses a newer handshake: it posts `{type: "as_req_v1", key}` to its own window with a `MessageChannel` port and expects `{type: "as_res_v1", key}` back on that port within 500 ms, retrying after 100, 500 and 1000 ms. The stub answers both handshakes. With the stub on `bundle.js` the first host succeeds, so `rule.evenyippee.com` is never requested and the page stays intact in Chromium.
+The WordPress plugin on `feastingathome.com` and `101cookbooks.com` (2026-11-08, `data-sdk="wp-l/1.1.11"`) starts at `html-load.com/bundle.js`, then tries `fb.html-load.com/api.js`, `rule.evenyippee.com/cdn.js`, `content-loader.com/bundle.js` and `fb.content-loader.com/api.js`. Its `onload` uses a newer handshake: it posts `{type: "as_req_v1", key}` to its own window with a `MessageChannel` port and expects `{type: "as_res_v1", key}` back on that port within 500 ms, retrying after 100, 500 and 1000 ms. The stub answers both handshakes. With the stub on `bundle.js` the first host succeeds, so `rule.evenyippee.com` is never requested and the page stays intact in Chromium.
 
 A host that answers `404` still advances the fallback chain, but a host that answers `200` with any script does not: the page then waits for the handshake and fails without trying fallbacks. A resolver block page with a trusted certificate (verified with the NextDNS block page on Android, 2026-09-24) is such a host, so every loader host needs a rewrite to the sink. Because of the first case, so the bundled profile serves the stub on `/loader.min.js`, `/app.js`, `/vendor.js`, `/main.js`, `/bundle.js` and `/api.js` for every known domain and all of its subdomains, including `js-loader.com`, `css-load.com` and the numbered subdomains from [Jacob Desforges' research](https://jacobdesforges.com/adshield-ad-reinsertion/).
 
