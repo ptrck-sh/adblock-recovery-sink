@@ -15,6 +15,9 @@ urls=(
 	https://html-load.com/app.js
 	https://content-loader.com/app.js
 	https://dkyerkk91s4fa.cloudfront.net/main.js
+	https://html-load.com/bundle.js
+	https://fb.html-load.com/api.js
+	https://fb.content-loader.com/api.js
 )
 
 rm -rf "$work"

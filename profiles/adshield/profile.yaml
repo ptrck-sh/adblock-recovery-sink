@@ -43,3 +43,19 @@ routes:
     cache_control: no-store
     cors_origin: "*"
     body_file: loader.min.js
+  - hosts: *hosts
+    path: /bundle.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /api.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
