@@ -12,7 +12,7 @@ weight = 10
 | Chrome shows or blocks a Local Network Access prompt | The sink resolves to a private or loopback address. | Allow the affected site, or use the public-address design in [Chrome Local Network Access](@/chrome-local-network-access.md). |
 | TLS handshake fails | The SNI name is not configured. | Use only a host supplied by an enabled profile and include it in the generated CA constraints. |
 | HTTP `421` | The HTTP Host is not configured or accepted. | Check the DNS rewrite and configured `hosts`. |
-| HTTP `404` | The host is accepted but the request path has no profile route. | The bundled profile serves `/loader.min.js`, `/app.js`, `/vendor.js`, `/main.js`, `/bundle.js` and `/api.js` only. |
+| HTTP `404` | The host is accepted but the request path has no profile route. | The bundled profile serves every top-level `*.js` path, such as `/loader.min.js` or `/bundle.js`, and nothing else. |
 | HTTP `405` | The profile does not permit the request method. | Use a supported method or correct the profile. |
 
 Test TLS routing directly with a trusted CA file:

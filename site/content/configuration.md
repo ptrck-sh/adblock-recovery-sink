@@ -72,4 +72,4 @@ routes:
     body_file: loader.js
 ```
 
-Each profile needs a non-empty `name`, `version: 1`, and at least one route. Routes require `hosts`, an absolute `path`, supported methods (`GET`, `HEAD`, `POST`, or `OPTIONS`), a status from `100` through `599`, and a relative `body_file` in the profile directory. Response bodies are limited to 1 MiB.
+Each profile needs a non-empty `name`, `version: 1`, and at least one route. Routes require `hosts`, an absolute `path` (a Go `path.Match` pattern such as `/*.js`; `*` does not match `/`), supported methods (`GET`, `HEAD`, `POST`, or `OPTIONS`), a status from `100` through `599`, and a relative `body_file` in the profile directory. Response bodies are limited to 1 MiB.

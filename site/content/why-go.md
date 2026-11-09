@@ -22,7 +22,7 @@ nginx serves whatever certificate and key it is given. The sink refuses to start
 
 ## Exact routing
 
-Each profile route is an exact host, path and method, served with fixed headers. Everything else gets a TLS failure, `421`, `404` or `405`. In nginx that is a `server` block per host, `location =` blocks, `return 200` with an escaped JavaScript string or a file, `if` checks on the method, and CORS handling written by hand. The profile YAML states the same thing as data, and the unit tests check it.
+Each profile route is a host, a path pattern and a method, served with fixed headers. Everything else gets a TLS failure, `421`, `404` or `405`. In nginx that is a `server` block per host, `location =` blocks, `return 200` with an escaped JavaScript string or a file, `if` checks on the method, and CORS handling written by hand. The profile YAML states the same thing as data, and the unit tests check it.
 
 ## Enrollment
 
