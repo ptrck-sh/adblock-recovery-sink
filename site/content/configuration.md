@@ -58,6 +58,8 @@ All timeout values must be positive except `shutdown_delay`, which may be zero. 
 
 Profiles define only the responses that the sink may serve. Bundled profiles are embedded in the binary. `profiles_dir` adds or replaces profiles by name: each discovered `profile.yaml` is loaded, and an operator profile with the same name replaces the bundled one.
 
+Two profiles are bundled. `adshield` serves the stub on the known loader paths. `adshield-scripts` is opt-in and serves the same stub on every top-level `*.js` path of the same hosts, so loader names Ad-Shield introduces later keep working without a release. Enable it next to `adshield`, for example `ARS_PROFILES=adshield,adshield-scripts`. Requests for other paths, nested paths and non-script files still get `404`.
+
 ```yaml
 version: 1
 name: example
