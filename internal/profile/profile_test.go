@@ -19,6 +19,7 @@ func TestProfileValidation(t *testing.T) {
 		{"version", "version: 2\nname: test\nroutes: []\n", fstest.MapFS{"test/profile.yaml": {Data: []byte("version: 2\nname: test\nroutes: []\n")}}, true},
 		{"wildcard", "version: 1\nname: test\nroutes:\n  - hosts: [bad*.example.com]\n    path: /x\n    methods: [GET]\n    status: 200\n    body_file: body\n", nil, true},
 		{"path", "version: 1\nname: test\nroutes:\n  - hosts: [example.com]\n    path: x\n    methods: [GET]\n    status: 200\n    body_file: body\n", nil, true},
+		{"path pattern", "version: 1\nname: test\nroutes:\n  - hosts: [example.com]\n    path: /[x\n    methods: [GET]\n    status: 200\n    body_file: body\n", nil, true},
 		{"method", "version: 1\nname: test\nroutes:\n  - hosts: [example.com]\n    path: /x\n    methods: [PUT]\n    status: 200\n    body_file: body\n", nil, true},
 		{"body traversal", "version: 1\nname: test\nroutes:\n  - hosts: [example.com]\n    path: /x\n    methods: [GET]\n    status: 200\n    body_file: ../body\n", nil, true},
 	}
@@ -37,7 +38,7 @@ func TestProfileValidation(t *testing.T) {
 }
 
 func TestRouterResults(t *testing.T) {
-	items := map[string]Profile{"test": {Name: "test", Routes: []Route{{Profile: "test", Hosts: []string{"example.com", "*.wild.example"}, Path: "/x", Methods: []string{"GET"}}}}}
+	items := map[string]Profile{"test": {Name: "test", Routes: []Route{{Profile: "test", Hosts: []string{"example.com", "*.wild.example"}, Path: "/x", Methods: []string{"GET"}}, {Profile: "test", Hosts: []string{"glob.example"}, Path: "/*.js", Methods: []string{"GET"}}}}}
 	router, err := NewRouter(items, []string{"test"})
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +47,7 @@ func TestRouterResults(t *testing.T) {
 		host, method, path string
 		want               Result
 	}{
-		{"example.com", "GET", "/x", Matched}, {"example.com", "POST", "/x", MethodNotAllowed}, {"example.com", "GET", "/other", UnknownPath}, {"badexample.com", "GET", "/x", UnknownHost}, {"wild.example", "GET", "/x", UnknownHost}, {"one.wild.example", "GET", "/x", Matched},
+		{"example.com", "GET", "/x", Matched}, {"example.com", "POST", "/x", MethodNotAllowed}, {"example.com", "GET", "/other", UnknownPath}, {"badexample.com", "GET", "/x", UnknownHost}, {"wild.example", "GET", "/x", UnknownHost}, {"one.wild.example", "GET", "/x", Matched}, {"glob.example", "GET", "/bundle.js", Matched}, {"glob.example", "GET", "/a/b.js", UnknownPath}, {"glob.example", "GET", "/x.css", UnknownPath},
 	}
 	for _, test := range tests {
 		_, result := router.Match(test.host, test.method, test.path)

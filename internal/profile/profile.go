@@ -128,7 +128,7 @@ func parse(source fs.FS, file string) (Profile, error) {
 }
 
 func validateRoute(route *Route, bodyFile string) error {
-	if !strings.HasPrefix(route.Path, "/") || route.Path == "" || bodyFile == "" || path.IsAbs(bodyFile) {
+	if _, err := path.Match(route.Path, ""); err != nil || !strings.HasPrefix(route.Path, "/") || bodyFile == "" || path.IsAbs(bodyFile) {
 		return errors.New("invalid route path or body")
 	}
 	if len(route.Hosts) == 0 || len(route.Methods) == 0 || route.Status < 100 || route.Status > 599 {
@@ -168,7 +168,7 @@ func (r *Router) Match(host, method, requestPath string) (*Route, Result) {
 		if !routeHasHost(route, host) {
 			continue
 		}
-		if route.Path != requestPath {
+		if ok, _ := path.Match(route.Path, requestPath); !ok {
 			continue
 		}
 		pathRoute = route
