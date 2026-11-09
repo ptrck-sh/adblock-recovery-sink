@@ -52,6 +52,8 @@ func TestHandler(t *testing.T) {
 		{"head", "html-load.com:443", "HEAD", "/loader.min.js", 200, false},
 		{"options", "html-load.com", "OPTIONS", "/loader.min.js", 204, false},
 		{"body", "HTML-LOAD.COM.", "GET", "/loader.min.js", 200, true},
+		{"any script", "html-load.com", "GET", "/bundle.js", 200, true},
+		{"nested script", "html-load.com", "GET", "/a/b.js", 404, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
