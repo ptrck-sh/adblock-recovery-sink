@@ -1,7 +1,7 @@
 version: 1
 name: adshield
 routes:
-  - hosts:
+  - hosts: &hosts
       - html-load.com
       - "*.html-load.com"
       - content-loader.com
@@ -12,10 +12,50 @@ routes:
       - "*.css-load.com"
       - d37j8pfxu2iogi.cloudfront.net
       - dkyerkk91s4fa.cloudfront.net
-    path: /*.js
-    methods: [GET, HEAD]
+    path: /loader.min.js
+    methods: &methods [GET, HEAD]
     status: 200
-    content_type: "text/javascript; charset=utf-8"
+    content_type: &type "text/javascript; charset=utf-8"
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /app.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /vendor.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /main.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /bundle.js
+    methods: *methods
+    status: 200
+    content_type: *type
+    cache_control: no-store
+    cors_origin: "*"
+    body_file: loader.min.js
+  - hosts: *hosts
+    path: /api.js
+    methods: *methods
+    status: 200
+    content_type: *type
     cache_control: no-store
     cors_origin: "*"
     body_file: loader.min.js

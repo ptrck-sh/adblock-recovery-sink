@@ -22,13 +22,13 @@ import (
 	"gitlab.com/ptrck-sh/adblock-recovery-sink/profiles"
 )
 
-func bundledRouter(t *testing.T) *profile.Router {
+func bundledRouter(t *testing.T, names ...string) *profile.Router {
 	t.Helper()
 	items, err := profile.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	router, err := profile.NewRouter(items, []string{"adshield"})
+	router, err := profile.NewRouter(items, names)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func bundledRouter(t *testing.T) *profile.Router {
 }
 
 func TestHandler(t *testing.T) {
-	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil)
+	handler := NewHandler(bundledRouter(t, "adshield"), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil)
 	body, err := profiles.FS.ReadFile("adshield/loader.min.js")
 	if err != nil {
 		t.Fatal(err)
@@ -53,7 +53,7 @@ func TestHandler(t *testing.T) {
 		{"options", "html-load.com", "OPTIONS", "/loader.min.js", 204, false},
 		{"body", "HTML-LOAD.COM.", "GET", "/loader.min.js", 200, true},
 		{"any script", "html-load.com", "GET", "/bundle.js", 200, true},
-		{"nested script", "html-load.com", "GET", "/a/b.js", 404, false},
+		{"unlisted script", "html-load.com", "GET", "/x.js", 404, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestHandler(t *testing.T) {
 
 func TestHandlerSiteRequests(t *testing.T) {
 	m := metrics.New([]string{"adshield"}, true, 100, 200)
-	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, m, nil)
+	handler := NewHandler(bundledRouter(t, "adshield"), []string{"html-load.com"}, m, nil)
 	matched := httptest.NewRequest(http.MethodGet, "https://example/loader.min.js", nil)
 	matched.Host = "html-load.com"
 	matched.Header.Set("Referer", "https://www.example.com/path")
@@ -112,7 +112,7 @@ func TestHandlerSiteRequests(t *testing.T) {
 
 func TestHandlerUpstreamRequests(t *testing.T) {
 	m := metrics.New([]string{"adshield"}, false, 100, 1)
-	handler := NewHandler(bundledRouter(t), []string{"html-load.com"}, m, nil)
+	handler := NewHandler(bundledRouter(t, "adshield"), []string{"html-load.com"}, m, nil)
 	tests := []struct {
 		host, method, path, result string
 	}{
@@ -178,7 +178,7 @@ func TestTLS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := newServer(t, NewHandler(bundledRouter(t), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil))
+	server := newServer(t, NewHandler(bundledRouter(t, "adshield"), []string{"html-load.com"}, metrics.New([]string{"adshield"}, false, 100, 200), nil))
 	server.TLS = TLSConfig([]string{"html-load.com"}, testCertSource{certificate: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}}, true, metrics.New([]string{"adshield"}, false, 100, 200))
 	server.StartTLS()
 	defer server.Close()
@@ -228,4 +228,33 @@ func newServer(t *testing.T, handler http.Handler) *httptest.Server {
 	server := httptest.NewUnstartedServer(handler)
 	server.Listener = listener
 	return server
+}
+
+func TestScriptsProfile(t *testing.T) {
+	router := bundledRouter(t, "adshield", "adshield-scripts")
+	tests := []struct {
+		host, path string
+		want       profile.Result
+	}{
+		{"html-load.com", "/x.js", profile.Matched},
+		{"fb.content-loader.com", "/loader.min.js", profile.Matched},
+		{"html-load.com", "/a/b.js", profile.UnknownPath},
+		{"html-load.com", "/x.css", profile.UnknownPath},
+	}
+	for _, test := range tests {
+		if _, result := router.Match(test.host, "GET", test.path); result != test.want {
+			t.Fatalf("%s%s: got %s", test.host, test.path, result)
+		}
+	}
+	stub, err := profiles.FS.ReadFile("adshield/loader.min.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	scripts, err := profiles.FS.ReadFile("adshield-scripts/loader.min.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(stub) != string(scripts) {
+		t.Fatal("adshield-scripts stub differs from adshield stub")
+	}
 }
